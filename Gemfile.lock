@@ -109,6 +109,7 @@ GEM
     erubi (1.13.1)
     et-orbi (1.4.0)
       tzinfo
+    event_stream_parser (1.0.0)
     factory_bot (6.5.6)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -116,6 +117,16 @@ GEM
       railties (>= 6.1.0)
     faker (3.5.2)
       i18n (>= 1.8.11, < 2)
+    faraday (2.14.0)
+      faraday-net_http (>= 2.0, < 3.5)
+      json
+      logger
+    faraday-multipart (1.1.1)
+      multipart-post (~> 2.0)
+    faraday-net_http (3.4.1)
+      net-http (>= 0.5.0)
+    faraday-retry (2.3.2)
+      faraday (~> 2.0)
     fugit (1.12.1)
       et-orbi (~> 1.4)
       raabro (~> 1.4)
@@ -164,6 +175,9 @@ GEM
     mini_mime (1.1.5)
     minitest (5.26.0)
     msgpack (1.8.0)
+    multipart-post (2.4.1)
+    net-http (0.6.0)
+      uri
     net-imap (0.5.12)
       date
       net-protocol
@@ -308,6 +322,15 @@ GEM
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
+    ruby_llm (1.8.2)
+      base64
+      event_stream_parser (~> 1)
+      faraday (>= 1.10.0)
+      faraday-multipart (>= 1)
+      faraday-net_http (>= 1)
+      faraday-retry (>= 1)
+      marcel (~> 1.0)
+      zeitwerk (~> 2)
     rubyzip (3.2.1)
     securerandom (0.4.1)
     selenium-webdriver (4.38.0)
@@ -406,6 +429,7 @@ DEPENDENCIES
   rails (~> 8.0.3)
   rspec-rails
   rubocop-rails-omakase
+  ruby_llm (~> 1.8)
   selenium-webdriver
   solid_cable
   solid_cache
