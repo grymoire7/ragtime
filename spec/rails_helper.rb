@@ -23,18 +23,24 @@ require 'rspec/rails'
 # directory. Alternatively, in the individual `*_spec.rb` files, manually
 # require only the support files necessary.
 #
-# Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
+Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 # Ensures that the test database schema matches the current schema file.
-# If there are pending migrations it will invoke `db:test:prepare` to
-# recreate the test database by loading the schema.
-# If you are not using ActiveRecord, you can remove these lines.
+# Note: We use migrations directly instead of schema loading because
+# sqlite-vec virtual tables require the extension to be loaded first.
+# Run `RAILS_ENV=test bin/rails db:migrate` to set up the test database.
 begin
-  ActiveRecord::Migration.maintain_test_schema!
+  ActiveRecord::Migration.check_all_pending!
 rescue ActiveRecord::PendingMigrationError => e
+  puts "\nYou have pending migrations. Run: RAILS_ENV=test bin/rails db:migrate"
   abort e.to_s.strip
 end
 RSpec.configure do |config|
+  # Suppress warnings about potential false positives in raise_error matcher
+  config.expect_with :rspec do |expectations|
+    expectations.on_potential_false_positives = :nothing
+  end
+
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join('spec/fixtures')
@@ -69,4 +75,15 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Include FactoryBot methods
+  config.include FactoryBot::Syntax::Methods
+end
+
+# Shoulda Matchers configuration
+Shoulda::Matchers.configure do |config|
+  config.integrate do |with|
+    with.test_framework :rspec
+    with.library :rails
+  end
 end

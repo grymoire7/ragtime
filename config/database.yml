@@ -8,6 +8,10 @@ default: &default
   adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   timeout: 5000
+  # Load sqlite-vec extension for vector similarity search
+  prepare: true
+  # The sqlite-vec extension needs to be loaded via code, not here
+  # See config/initializers/sqlite_vec.rb
 
 development:
   <<: *default

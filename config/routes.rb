@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :documents, only: [:index, :show, :create, :destroy]
+
   resources :chats do
     resources :messages, only: [:create]
   end

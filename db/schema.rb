@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_29_171638) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_29_214244) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -44,6 +44,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_171638) do
     t.datetime "updated_at", null: false
     t.integer "model_id"
     t.index ["model_id"], name: "index_chats_on_model_id"
+  end
+
+  create_table "chunks", force: :cascade do |t|
+    t.integer "document_id", null: false
+    t.text "content"
+    t.integer "position"
+    t.integer "token_count"
+    t.binary "embedding"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id"], name: "index_chunks_on_document_id"
+    t.index ["position"], name: "index_chunks_on_position"
+  end
+
+  create_table "documents", force: :cascade do |t|
+    t.string "title"
+    t.string "filename"
+    t.string "content_type"
+    t.integer "file_size"
+    t.string "status"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_documents_on_created_at"
+    t.index ["status"], name: "index_documents_on_status"
   end
 
   create_table "messages", force: :cascade do |t|
@@ -94,11 +119,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_171638) do
     t.index ["tool_call_id"], name: "index_tool_calls_on_tool_call_id", unique: true
   end
 
+# Could not dump table "vec_chunks_vector_chunks00" because of following StandardError
+#   Unknown type '' for column 'rowid'
+
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "chats", "models"
+  add_foreign_key "chunks", "documents"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
   add_foreign_key "tool_calls", "messages"
-end
+
+  # Virtual tables defined in this database.
+  # Note that virtual tables may not work with other database engines. Be careful if changing database.
