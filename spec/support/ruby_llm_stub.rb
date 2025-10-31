@@ -6,5 +6,10 @@ module RubyLLM
       # This will be mocked in specs
       raise NotImplementedError, "RubyLLM::Client.embed should be mocked in tests"
     end
+
+    def self.chat(messages:, model:)
+      # This will be mocked in specs
+      raise NotImplementedError, "RubyLLM::Client.chat should be mocked in tests"
+    end
   end
 end
