@@ -4,14 +4,14 @@ RSpec.describe Rag::ChunkRetriever do
   let!(:document1) { create(:document, title: "First Document") }
   let!(:document2) { create(:document, title: "Second Document") }
   let(:query_embedding) { Array.new(512) { 0.5 } }
-  let(:mock_response) { double("Response", embedding: query_embedding) }
+  let(:mock_response) { double("Response", vectors: query_embedding) }
 
   # Disable transactional fixtures for this spec because vec_chunks doesn't support transactions
   self.use_transactional_tests = false
 
   before do
     # Stub RubyLLM Client for embedding generation
-    allow(RubyLLM::Client).to receive(:embed).and_return(mock_response)
+    allow(RubyLLM).to receive(:embed).and_return(mock_response)
 
     # Create chunks with embeddings for document1
     3.times do |i|
@@ -150,8 +150,8 @@ RSpec.describe Rag::ChunkRetriever do
         query = "test query"
         # Very different embedding
         very_different_embedding = Array.new(512) { 10.0 }
-        very_different_response = double("Response", embedding: very_different_embedding)
-        allow(RubyLLM::Client).to receive(:embed).and_return(very_different_response)
+        very_different_response = double("Response", vectors: very_different_embedding)
+        allow(RubyLLM).to receive(:embed).and_return(very_different_response)
 
         results = described_class.retrieve(query, distance_threshold: 0.01)
 
@@ -163,8 +163,8 @@ RSpec.describe Rag::ChunkRetriever do
       it "only returns chunks from specified documents" do
         query = "test query"
         filtered_embedding = Array.new(512) { 0.4 }
-        filtered_response = double("Response", embedding: filtered_embedding)
-        allow(RubyLLM::Client).to receive(:embed).and_return(filtered_response)
+        filtered_response = double("Response", vectors: filtered_embedding)
+        allow(RubyLLM).to receive(:embed).and_return(filtered_response)
 
         results = described_class.retrieve(
           query,

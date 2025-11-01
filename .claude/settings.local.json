@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gem list:*)",
+      "Bash(bundle install:*)",
+      "Bash(bin/rails db:migrate:*)",
+      "Bash(gem which:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(RAILS_ENV=test bin/rails db:migrate:status:*)",
+      "Read(//Users/tracy/.claude/**)",
+      "Bash(cat:*)",
+      "Bash(RAILS_ENV=test bundle exec rails runner:*)",
+      "Bash(ollama show:*)",
+      "Bash(ollama list:*)",
+      "WebFetch(domain:ollama.com)",
+      "Bash(bin/rails server:*)",
+      "Bash(bundle exec gem:*)",
+      "Bash(RAILS_ENV=test bin/rails db:migrate:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

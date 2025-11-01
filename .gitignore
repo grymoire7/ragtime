@@ -32,3 +32,8 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+# Frontend (Vue.js) build artifacts
+/frontend/node_modules
+/frontend/dist
+/frontend/.vite

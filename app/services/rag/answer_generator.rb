@@ -17,7 +17,10 @@ module Rag
       limit = options.fetch(:limit, 5)
       distance_threshold = options.fetch(:distance_threshold, 1.0)
       document_ids = options[:document_ids]
-      model = options.fetch(:model, "claude-3-5-haiku-latest")
+
+      # Use environment-specific model if not specified
+      chat_config = Rails.application.config.x.ruby_llm[Rails.env.to_sym][:chat]
+      model = options.fetch(:model, chat_config[:model])
 
       # Step 1: Retrieve relevant chunks
       chunks_data = ChunkRetriever.retrieve(
@@ -54,13 +57,15 @@ module Rag
     private
 
     def call_llm(prompt, model)
-      response = RubyLLM::Client.chat(
-        messages: [
-          { role: "user", content: prompt }
-        ],
-        model: model
+      # Get provider config for the current environment
+      chat_config = Rails.application.config.x.ruby_llm[Rails.env.to_sym][:chat]
+
+      chat = RubyLLM.chat(
+        model: model,
+        provider: chat_config[:provider]
       )
 
+      response = chat.ask(prompt)
       response.content
     rescue => e
       raise LLMError, "LLM request failed: #{e.message}"

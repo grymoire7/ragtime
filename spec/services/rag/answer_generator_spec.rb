@@ -3,10 +3,11 @@ require 'rails_helper'
 RSpec.describe Rag::AnswerGenerator do
   let(:question) { "What is the capital of France?" }
   let(:mock_llm_response) { double("Response", content: "Paris is the capital of France.") }
+  let(:mock_chat) { double("Chat", ask: mock_llm_response) }
 
   before do
     # Stub RubyLLM Client
-    allow(RubyLLM::Client).to receive(:chat).and_return(mock_llm_response)
+    allow(RubyLLM).to receive(:chat).and_return(mock_chat)
   end
 
   describe ".generate" do
@@ -47,7 +48,8 @@ RSpec.describe Rag::AnswerGenerator do
       it "includes model used" do
         result = described_class.generate(question)
 
-        expect(result[:model]).to eq("claude-3-5-haiku-latest")
+        # Uses test environment model from config
+        expect(result[:model]).to eq("test-chat-model")
       end
 
       it "calls ChunkRetriever with correct parameters" do
@@ -68,12 +70,12 @@ RSpec.describe Rag::AnswerGenerator do
       end
 
       it "calls LLM with the built prompt" do
-        expect(RubyLLM::Client).to receive(:chat).with(
-          messages: [
-            { role: "user", content: "Mock prompt" }
-          ],
-          model: "claude-3-5-haiku-latest"
-        )
+        expect(RubyLLM).to receive(:chat).with(
+          model: "test-chat-model",
+          provider: :test
+        ).and_return(mock_chat)
+
+        expect(mock_chat).to receive(:ask).with("Mock prompt")
 
         described_class.generate(question)
       end
@@ -115,9 +117,9 @@ RSpec.describe Rag::AnswerGenerator do
       end
 
       it "respects custom model" do
-        expect(RubyLLM::Client).to receive(:chat).with(
+        expect(RubyLLM).to receive(:chat).with(
           hash_including(model: "claude-3-opus-latest")
-        )
+        ).and_return(mock_chat)
 
         described_class.generate(question, model: "claude-3-opus-latest")
       end
@@ -152,7 +154,7 @@ RSpec.describe Rag::AnswerGenerator do
       before do
         allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
         allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-        allow(RubyLLM::Client).to receive(:chat).and_raise(StandardError.new("API Error"))
+        allow(RubyLLM).to receive(:chat).and_raise(StandardError.new("API Error"))
       end
 
       it "returns error response" do

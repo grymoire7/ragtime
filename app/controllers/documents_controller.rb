@@ -34,12 +34,14 @@ class DocumentsController < ApplicationController
   # POST /documents
   # Upload a new document
   def create
-    unless params[:file].present?
+    # Handle both nested (document[file]) and flat (file) parameter structures
+    file = params.dig(:document, :file) || params[:file]
+
+    unless file.present?
       return render json: { error: "No file provided" }, status: :unprocessable_content
     end
 
-    file = params[:file]
-    title = params[:title] || file.original_filename
+    title = params[:title] || params.dig(:document, :title) || file.original_filename
 
     @document = Document.new(
       title: title,

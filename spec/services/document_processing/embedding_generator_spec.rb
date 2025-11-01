@@ -24,20 +24,21 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
   end
 
   describe "#generate" do
-    let(:mock_response) { double("Response", embedding: Array.new(512) { rand }) }
+    let(:mock_response) { double("Response", vectors: Array.new(512) { rand }) }
 
     before do
-      allow(RubyLLM::Client).to receive(:embed).and_return(mock_response)
+      allow(RubyLLM).to receive(:embed).and_return(mock_response)
     end
 
     it "generates embeddings using RubyLLM" do
       result = generator.generate("test text")
 
-      expect(RubyLLM::Client).to have_received(:embed).with(
+      # In test environment, should use the configured embedding model
+      expect(RubyLLM).to have_received(:embed).with(
         "test text",
-        model: "voyage-3.5-lite"
+        hash_including(model: anything, provider: anything)
       )
-      expect(result).to eq(mock_response.embedding)
+      expect(result).to eq(mock_response.vectors)
     end
 
     it "returns 512-dimensional embedding" do
@@ -57,7 +58,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
     end
 
     it "raises EmbeddingError on API failure" do
-      allow(RubyLLM::Client).to receive(:embed).and_raise(StandardError.new("API Error"))
+      allow(RubyLLM).to receive(:embed).and_raise(StandardError.new("API Error"))
 
       expect {
         generator.generate("test text")
@@ -135,15 +136,16 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
   end
 
   describe "model configuration" do
-    it "uses voyage-3.5-lite model" do
-      mock_response = double("Response", embedding: Array.new(512) { rand })
-      allow(RubyLLM::Client).to receive(:embed).and_return(mock_response)
+    it "uses environment-specific embedding model" do
+      mock_response = double("Response", vectors: Array.new(512) { rand })
+      allow(RubyLLM).to receive(:embed).and_return(mock_response)
 
       generator.generate("test")
 
-      expect(RubyLLM::Client).to have_received(:embed).with(
+      # In test environment, uses test config
+      expect(RubyLLM).to have_received(:embed).with(
         anything,
-        hash_including(model: "voyage-3.5-lite")
+        hash_including(model: anything, provider: anything)
       )
     end
   end

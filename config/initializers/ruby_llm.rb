@@ -18,8 +18,18 @@ Rails.application.configure do
         provider: :ollama
       },
       embedding: {
-        model: 'nomic-embed-text:latest',
+        model: 'jina/jina-embeddings-v2-small-en',
         provider: :ollama
+      }
+    },
+    test: {
+      chat: {
+        model: 'test-chat-model',
+        provider: :test
+      },
+      embedding: {
+        model: 'test-embedding-model',
+        provider: :test
       }
     },
     production: {

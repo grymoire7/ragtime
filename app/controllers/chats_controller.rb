@@ -11,16 +11,49 @@ class ChatsController < ApplicationController
   end
 
   def create
-    return unless prompt.present?
+    # Get model name from params or use default
+    model_name = model || default_model
 
-    @chat = Chat.create!(model: model)
-    ChatResponseJob.perform_later(@chat.id, prompt)
+    # Find the Model record by model_id
+    model_record = Model.find_by(model_id: model_name)
+    unless model_record
+      return render json: { error: "Model not found: #{model_name}" }, status: :unprocessable_content
+    end
 
-    redirect_to @chat, notice: 'Chat was successfully created.'
+    @chat = Chat.create!(model: model_record)
+
+    # If a prompt is provided, process it immediately
+    if prompt.present?
+      ChatResponseJob.perform_later(@chat.id, prompt)
+    end
+
+    respond_to do |format|
+      format.html { redirect_to @chat, notice: 'Chat was successfully created.' }
+      format.json { render json: @chat, status: :created }
+    end
   end
 
   def show
-    @message = @chat.messages.build
+    respond_to do |format|
+      format.html do
+        @message = @chat.messages.build
+      end
+      format.json do
+        render json: {
+          id: @chat.id,
+          model: @chat.model&.name,
+          created_at: @chat.created_at,
+          messages: @chat.messages.where.not(id: nil).map do |msg|
+            {
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              created_at: msg.created_at
+            }
+          end
+        }
+      end
+    end
   end
 
   private
@@ -30,10 +63,15 @@ class ChatsController < ApplicationController
   end
 
   def model
-    params[:chat][:model].presence
+    params.dig(:chat, :model).presence
   end
 
   def prompt
-    params[:chat][:prompt]
+    params.dig(:chat, :prompt)
+  end
+
+  def default_model
+    chat_config = Rails.application.config.x.ruby_llm[Rails.env.to_sym][:chat]
+    chat_config[:model]
   end
 end

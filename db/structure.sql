@@ -53,9 +53,9 @@ FOREIGN KEY ("document_id")
 CREATE INDEX "index_chunks_on_document_id" ON "chunks" ("document_id");
 CREATE INDEX "index_chunks_on_position" ON "chunks" ("position");
 CREATE VIRTUAL TABLE vec_chunks USING vec0(
-            chunk_id INTEGER PRIMARY KEY,
-            embedding FLOAT[512]
-          );
+        chunk_id INTEGER PRIMARY KEY,
+        embedding FLOAT[512]
+      );
 CREATE TABLE IF NOT EXISTS "vec_chunks_info" (key text primary key, value any);
 CREATE TABLE IF NOT EXISTS "vec_chunks_chunks"(chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,size INTEGER NOT NULL,validity BLOB NOT NULL,rowids BLOB NOT NULL);
 CREATE TABLE IF NOT EXISTS "vec_chunks_rowids"(rowid INTEGER PRIMARY KEY AUTOINCREMENT,id,chunk_id INTEGER,chunk_offset INTEGER);

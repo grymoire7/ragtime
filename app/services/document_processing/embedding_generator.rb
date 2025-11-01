@@ -25,13 +25,17 @@ module DocumentProcessing
       return nil if text.blank?
 
       begin
-        # Use RubyLLM to generate embedding
-        response = RubyLLM::Client.embed(
+        # Use RubyLLM to generate embedding with environment-specific model
+        embedding_config = Rails.application.config.x.ruby_llm[Rails.env.to_sym][:embedding]
+
+        response = RubyLLM.embed(
           text,
-          model: "voyage-3.5-lite"
+          model: embedding_config[:model],
+          provider: embedding_config[:provider]
         )
 
-        response.embedding
+        # RubyLLM returns a RubyLLM::Embedding object with .vectors method
+        response.vectors
       rescue => e
         raise EmbeddingError, "Failed to generate embedding: #{e.message}"
       end
