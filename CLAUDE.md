@@ -16,12 +16,21 @@ solid engineering practices and modern AI integration.
 - ✅ Phase 1: Foundation and document processing
 - ✅ Phase 2: Basic RAG implementation
 - ✅ Phase 3: Vue.js frontend foundation
+- ✅ Phase 4: Improved retrieval and citations
+
+**Phase 4 Achievements**:
+- Date-based filtering (created_after parameter)
+- Citation metadata storage (JSON column on messages)
+- Citation display with inline footnote style
+- Relevance scores shown for each source
+- Comprehensive test coverage (41 specs passing)
 
 **Next Phases**:
-- Phase 4: Improve retrieval and citations
-- Phase 5: Polish and error handling
-- Phase 6: Testing and refinement
-- Phase 7: Deployment and documentation
+- Phase 5: Interactive citations and document navigation
+- Phase 6: Polish and error handling
+- Phase 7: Testing and refinement
+- Phase 8: Deployment and documentation
+- Phase 9: Optional enhancements
 
 ## Technology Stack
 
@@ -40,10 +49,11 @@ solid engineering practices and modern AI integration.
 - **DOCX**: docx gem
 - **Token Counting**: tiktoken_ruby for chunking
 
-### Frontend (Planned)
+### Frontend
 - Vue.js 3 with Composition API
 - Vite for build tooling
-- Simple HTTP approach (no ActionCable streaming initially)
+- Polling-based chat interface (no ActionCable streaming)
+- Citation display with inline footnotes
 
 ## Architecture
 
@@ -125,16 +135,21 @@ solid engineering practices and modern AI integration.
 - Uses vector similarity search (cosine distance)
 - Returns top-k most relevant chunks
 - Configurable similarity threshold
+- **Phase 4**: Date filtering via `created_after` parameter
 
 **PromptBuilder** - Constructs RAG prompts
 - Combines retrieved chunks with user question
 - Formats context for LLM
 - Includes instructions for citation and grounding
+- Shows relevance scores for each chunk
 
 **AnswerGenerator** - Generates responses
 - Uses Anthropic Claude 3.5 Haiku
 - Implements RAG pattern with retrieved context
-- Returns answers with source attribution
+- **Phase 4**: Returns structured citations with metadata
+  - chunk_id, document_id, document_title
+  - relevance score (0-1)
+  - chunk position in document
 
 ### Background Jobs
 
@@ -146,9 +161,10 @@ solid engineering practices and modern AI integration.
 
 **ChatResponseJob** (`app/jobs/chat_response_job.rb`)
 - Handles async chat message processing
-- Retrieves relevant chunks
-- Generates AI response
-- Creates message record
+- Retrieves relevant chunks via RAG
+- Generates AI response with citations
+- Creates message record with citation metadata
+- **Phase 4**: Stores citations in message.metadata JSON field
 
 ## Database Schema
 
@@ -158,10 +174,18 @@ Chunks table includes:
 - SQLite virtual table with vec0 extension for similarity search
 - Uses cosine distance for similarity matching
 
+### Citation Storage (Phase 4)
+Messages table includes:
+- `metadata` (JSON) - Stores citation information with default `{}`
+- Citation format: `{ citations: [{ chunk_id, document_id, document_title, relevance, position }] }`
+- Enables conversation replay with source attribution
+- SQLite supports JSON natively (since 3.38)
+
 ### Key Relationships
 - Document → has_many Chunks
 - Chat → has_many Messages
 - Chunks store references back to parent Document
+- Messages store citation metadata in JSON column
 
 ## Configuration
 
@@ -244,21 +268,37 @@ Solid Queue runs automatically in development mode.
 - Basic authentication not yet implemented
 - Single-user focused
 
-### Planned Enhancements (Later Phases)
-- Citation extraction with source links
-- Document preview/viewer
-- Conversation management
-- Multi-document filtering
-- ActionCable streaming (if time allows)
+### Completed Enhancements (Phase 4)
+- ✅ Citation extraction and storage
+- ✅ Source attribution in answers
+- ✅ Date-based document filtering
+- ✅ Relevance scores for citations
+
+### Planned Enhancements (Phases 5-9)
+- Phase 5: Clickable citation links to documents
+- Phase 5: Document detail view with chunks
+- Phase 6: Document preview/viewer
+- Phase 6: Conversation management (clear, delete)
+- Phase 6: Basic authentication
+- Phase 9: ActionCable streaming (optional)
+- Phase 9: Advanced UI/UX polish (optional)
 
 ## Testing Strategy
 
-### Test Coverage (Phase 6)
-- Document processing pipeline
-- Vector search accuracy
-- API endpoints
-- RAG answer quality
+### Current Test Coverage (Phase 4)
+- ✅ Document processing pipeline (41 specs passing)
+- ✅ Vector search with date filtering
+- ✅ ChunkRetriever with created_after parameter
+- ✅ AnswerGenerator citation metadata
+- ✅ Relevance score calculation
+- ✅ Edge cases (nil documents, empty results, errors)
+
+### Planned Test Expansion (Phase 7)
+- API endpoint integration tests
+- RAG answer quality validation
 - Various document formats and sizes
+- Frontend component testing
+- Cross-browser compatibility
 
 ## Deployment Considerations
 
@@ -304,14 +344,20 @@ GET /documents
 Focus on getting core functionality working end-to-end before polish:
 1. ✅ Document upload → chunk → embed → search works
 2. ✅ Q&A with citations functional
-3. Next: Build Vue.js frontend (Phase 3)
-4. Then: Improve and deploy (Phases 4-7)
+3. ✅ Vue.js frontend built (Phase 3)
+4. ✅ Citations improved and displayed (Phase 4)
+5. **Next**: Interactive citations and navigation (Phase 5)
+6. **Then**: Polish, testing, and deployment (Phases 6-8)
 
-**Tests**: Tests are important and should be added and run regularly.
-  sqlite-vec limitations may require careful test design and require early
-  testing where it is involved. We unit test with rspec.
-**Critical Path**: Working demo that's deployable and interview-ready
-**Nice-to-Have**: Streaming, advanced features, extensive test coverage
+**Current Status**: Core RAG system is functional with citation tracking.
+  Ready to add interactive features and prepare for deployment.
+
+**Tests**: Tests are important and added regularly (41 specs passing).
+  sqlite-vec limitations required careful test design. We unit test with rspec.
+
+**Critical Path**: Working demo that's deployable and interview-ready ✅
+**In Progress**: Interactive features and polish
+**Nice-to-Have**: Streaming (Phase 9), advanced features, extensive test coverage
 
 ## Resources
 

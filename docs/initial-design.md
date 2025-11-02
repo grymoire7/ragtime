@@ -47,60 +47,77 @@ finish early, streaming is a great polish feature.
 
 ## Phased breakdown
 
-**Phase 1: Foundation and document processing**
+**Phase 1: Foundation and document processing** ✅ COMPLETE
 - Set up Rails 8 project with sqlite-vec
   - This required `gem install sqlite-vec` to get the native extension working locally.
     How do we handle this in deployment?
 - Implement document upload (PDF, TXT, DOCX support)
 - Build text extraction pipeline (pdf-reader gem, docx gem)
 - Create chunking strategy (target 500-1000 tokens per chunk with overlap)
-- Generate embeddings for chunks (OpenAI text-embedding-3-small)
+  - **Note**: Implemented with semantic awareness from the start (respects paragraphs → sentences → words)
+- Generate embeddings for chunks (Anthropic Voyage 3.5 Lite)
 - Store vectors in SQLite
 
-**Phase 2: Basic RAG implementation**
+**Phase 2: Basic RAG implementation** ✅ COMPLETE
 - Build vector similarity search
 - Implement simple retrieval (top-k chunks)
 - Create prompt template for answering questions
 - Build basic Rails API endpoint for Q&A
 - Add conversation history tracking
 
-**Phase 3: Vue.js frontend foundation**
+**Phase 3: Vue.js frontend foundation** ✅ COMPLETE
 - Set up Vite + Vue 3 project
 - Build document upload interface with drag-and-drop
 - Create document library view (list uploaded docs)
 - Show processing status for documents
-- Basic chat interface (no streaming yet)
+- Basic chat interface (polling-based, no streaming)
 
-**Phase 4: Improve retrieval and citations**
-- Add metadata filtering (by document, date, etc.)
-- Implement citation extraction (track which chunks were used)
-- Show source references in answers with jump-to-document links
-- Improve chunking with semantic awareness (don't split mid-sentence)
+**Phase 4: Improve retrieval and citations** ✅ COMPLETE
+- ✅ Add date filtering (created_after parameter for recent documents)
+- ✅ Implement citation storage (metadata JSON column on messages)
+- ✅ Track which chunks were used (chunk_id, document_id, relevance, position)
+- ✅ Show source references in answers (inline footnote style below messages)
+- ✅ Comprehensive test coverage for new features
+- ⏭️ **Deferred to Phase 5**: Jump-to-document/chunk links (IDs stored, links not yet implemented)
+- ❌ **Not needed**: Chunking semantic awareness (already implemented in Phase 1)
 
-**Phase 5: Polish and error handling**
+**Phase 5: Interactive citations and document navigation**
+- Add clickable citation links that jump to source documents
+- Implement document detail view showing chunks
+- Add chunk highlighting in document view
+- Consider: Document preview modal from citations
+- Consider: Citation tooltips showing chunk content on hover
+
+**Phase 6: Polish and error handling**
 - Handle edge cases (empty documents, unsupported formats)
-- Add proper error messages throughout
+- Add proper error messages throughout UI
 - Implement conversation clearing/management
-- Add document deletion
-- Basic authentication (Devise or simple token auth)
+- Add document deletion functionality
+- Improve loading states and user feedback
+- Add basic authentication (Devise or simple token auth)
 
-**Phase 6: Testing and refinement**
-- Write key tests (document processing, vector search, API endpoints)
+**Phase 7: Testing and refinement**
+- Expand test coverage (document processing, vector search, API endpoints)
 - Test with various document types and sizes
 - Refine prompts for better answer quality
-- Add loading states and user feedback
+- Performance testing with larger document sets
+- Cross-browser testing for Vue.js frontend
 
-**Phase 7: Deployment and documentation**
+**Phase 8: Deployment and documentation**
 - Deploy to Fly.io or Render
+- Solve sqlite-vec native extension deployment
 - Write comprehensive README with setup instructions
 - Create demo video or GIF showing key features
-- Add environment variable configuration
+- Document environment variable configuration
+- Write technical blog post explaining architecture
 
-**Phase 8: Blog post and optional features**
-- Write technical blog post explaining your approach
-- If time allows: add ActionCable streaming
-- If time allows: improve UI/UX polish
-- If time allows: add document preview or PDF viewer
+**Phase 9: Optional enhancements** (if time permits)
+- ActionCable streaming for real-time responses
+- Advanced UI/UX polish
+- Document preview or PDF viewer
+- Multi-document conversations with filtering UI
+- Export conversation history
+- Advanced analytics (popular questions, document usage)
 
 ## Technical implementation details
 
