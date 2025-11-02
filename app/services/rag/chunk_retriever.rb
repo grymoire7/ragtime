@@ -11,12 +11,13 @@ module Rag
     # @param limit [Integer] maximum number of chunks to return
     # @param distance_threshold [Float] maximum distance for chunks to be considered relevant
     # @param document_ids [Array<Integer>] optional array of document IDs to filter by
+    # @param created_after [DateTime] optional filter for documents created after this date
     # @return [Array<Hash>] array of hashes with :chunk, :distance, and :document keys
-    def self.retrieve(query, limit: DEFAULT_LIMIT, distance_threshold: DEFAULT_DISTANCE_THRESHOLD, document_ids: nil)
-      new.retrieve(query, limit: limit, distance_threshold: distance_threshold, document_ids: document_ids)
+    def self.retrieve(query, limit: DEFAULT_LIMIT, distance_threshold: DEFAULT_DISTANCE_THRESHOLD, document_ids: nil, created_after: nil)
+      new.retrieve(query, limit: limit, distance_threshold: distance_threshold, document_ids: document_ids, created_after: created_after)
     end
 
-    def retrieve(query, limit: DEFAULT_LIMIT, distance_threshold: DEFAULT_DISTANCE_THRESHOLD, document_ids: nil)
+    def retrieve(query, limit: DEFAULT_LIMIT, distance_threshold: DEFAULT_DISTANCE_THRESHOLD, document_ids: nil, created_after: nil)
       return [] if query.blank?
 
       # Generate embedding for the query
@@ -32,6 +33,9 @@ module Rag
 
       # Filter by document IDs if specified
       results = filter_by_documents(results, document_ids) if document_ids.present?
+
+      # Filter by document creation date if specified
+      results = filter_by_date(results, created_after) if created_after.present?
 
       # Format results with additional metadata
       format_results(results)
@@ -49,6 +53,17 @@ module Rag
     def filter_by_documents(results, document_ids)
       results.select do |chunk, _distance|
         document_ids.include?(chunk.document_id)
+      end
+    end
+
+    def filter_by_date(results, created_after)
+      # Load documents for date checking
+      document_ids = results.map { |chunk, _| chunk.document_id }.compact.uniq
+      documents_by_id = Document.where(id: document_ids).index_by(&:id)
+
+      results.select do |chunk, _distance|
+        document = documents_by_id[chunk.document_id]
+        document && document.created_at >= created_after
       end
     end
 

@@ -16,7 +16,7 @@ FOREIGN KEY ("message_id")
 CREATE UNIQUE INDEX "index_tool_calls_on_tool_call_id" ON "tool_calls" ("tool_call_id");
 CREATE INDEX "index_tool_calls_on_name" ON "tool_calls" ("name");
 CREATE INDEX "index_tool_calls_on_message_id" ON "tool_calls" ("message_id");
-CREATE TABLE IF NOT EXISTS "messages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "role" varchar NOT NULL, "content" text, "input_tokens" integer, "output_tokens" integer, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "chat_id" integer NOT NULL, "model_id" integer, "tool_call_id" integer, CONSTRAINT "fk_rails_c02b47ad97"
+CREATE TABLE IF NOT EXISTS "messages" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "role" varchar NOT NULL, "content" text, "input_tokens" integer, "output_tokens" integer, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "chat_id" integer NOT NULL, "model_id" integer, "tool_call_id" integer, "metadata" json DEFAULT '{}', CONSTRAINT "fk_rails_c02b47ad97"
 FOREIGN KEY ("model_id")
   REFERENCES "models" ("id")
 , CONSTRAINT "fk_rails_0f670de7ba"
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS "vec_chunks_chunks"(chunk_id INTEGER PRIMARY KEY AUTO
 CREATE TABLE IF NOT EXISTS "vec_chunks_rowids"(rowid INTEGER PRIMARY KEY AUTOINCREMENT,id,chunk_id INTEGER,chunk_offset INTEGER);
 CREATE TABLE IF NOT EXISTS "vec_chunks_vector_chunks00"(rowid PRIMARY KEY,vectors BLOB NOT NULL);
 INSERT INTO "schema_migrations" (version) VALUES
+('20251102221021'),
 ('20251029214244'),
 ('20251029205413'),
 ('20251029171638'),

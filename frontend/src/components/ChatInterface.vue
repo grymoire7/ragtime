@@ -41,6 +41,20 @@
           </div>
           <div class="message-content">
             <div class="message-text">{{ message.content }}</div>
+            <div v-if="message.role === 'assistant' && hasCitations(message)" class="citations">
+              <div class="citations-header">Sources:</div>
+              <div class="citations-list">
+                <div
+                  v-for="(citation, index) in getCitations(message)"
+                  :key="index"
+                  class="citation-item"
+                >
+                  <span class="citation-number">[{{ index + 1 }}]</span>
+                  <span class="citation-title">{{ citation.document_title }}</span>
+                  <span class="citation-relevance">(relevance: {{ formatRelevance(citation.relevance) }})</span>
+                </div>
+              </div>
+            </div>
             <div class="message-meta">{{ formatTime(message.created_at) }}</div>
           </div>
         </div>
@@ -236,6 +250,24 @@ function formatTime(dateString) {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+function hasCitations(message) {
+  return message.metadata &&
+         message.metadata.citations &&
+         Array.isArray(message.metadata.citations) &&
+         message.metadata.citations.length > 0;
+}
+
+function getCitations(message) {
+  return message.metadata?.citations || [];
+}
+
+function formatRelevance(relevance) {
+  if (typeof relevance === 'number') {
+    return `${Math.round(relevance * 100)}%`;
+  }
+  return 'N/A';
+}
+
 watch(messages, () => {
   scrollToBottom();
 });
@@ -425,6 +457,53 @@ watch(messages, () => {
   font-size: 0.75rem;
   color: #a0aec0;
   padding-left: 0.25rem;
+}
+
+.citations {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #edf2f7;
+  border-radius: 6px;
+  border-left: 3px solid #9f7aea;
+}
+
+.citations-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.citations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.citation-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.citation-number {
+  font-weight: 600;
+  color: #9f7aea;
+  flex-shrink: 0;
+}
+
+.citation-title {
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.citation-relevance {
+  color: #718096;
+  font-size: 0.8125rem;
 }
 
 .typing-indicator {

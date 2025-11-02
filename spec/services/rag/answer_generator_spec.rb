@@ -21,7 +21,8 @@ RSpec.describe Rag::AnswerGenerator do
             chunk: chunk,
             document: document,
             content: chunk.content,
-            distance: 0.1
+            distance: 0.1,
+            position: chunk.position
           }
         ]
       end
@@ -38,11 +39,17 @@ RSpec.describe Rag::AnswerGenerator do
         expect(result[:answer]).to eq("Paris is the capital of France.")
       end
 
-      it "includes chunks used in response" do
+      it "includes citations in response with full metadata" do
         result = described_class.generate(question)
 
-        expect(result[:chunks_used]).to be_an(Array)
-        expect(result[:chunks_used].first).to include(id: 1, document_title: "Geography Facts")
+        expect(result[:citations]).to be_an(Array)
+        expect(result[:citations].first).to include(
+          chunk_id: 1,
+          document_id: 1,
+          document_title: "Geography Facts",
+          position: 0
+        )
+        expect(result[:citations].first[:relevance]).to be_a(Float)
       end
 
       it "includes model used" do
@@ -57,7 +64,8 @@ RSpec.describe Rag::AnswerGenerator do
           question,
           limit: 5,
           distance_threshold: 1.0,
-          document_ids: nil
+          document_ids: nil,
+          created_after: nil
         )
 
         described_class.generate(question)
@@ -89,7 +97,8 @@ RSpec.describe Rag::AnswerGenerator do
           chunk: chunk,
           document: document,
           content: chunk.content,
-          distance: 0.1
+          distance: 0.1,
+          position: chunk.position
         }]
       end
 
@@ -125,6 +134,16 @@ RSpec.describe Rag::AnswerGenerator do
         described_class.generate(question, document_ids: [1, 2, 3])
       end
 
+      it "respects custom created_after" do
+        created_after_date = 7.days.ago
+        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
+          question,
+          hash_including(created_after: created_after_date)
+        )
+
+        described_class.generate(question, created_after: created_after_date)
+      end
+
       it "respects custom model" do
         expect(RubyLLM).to receive(:chat).with(
           hash_including(model: "claude-3-opus-latest")
@@ -145,10 +164,10 @@ RSpec.describe Rag::AnswerGenerator do
         expect(result[:answer]).to eq("I don't have enough information in the provided documents to answer your question.")
       end
 
-      it "has empty chunks_used" do
+      it "has empty citations" do
         result = described_class.generate(question)
 
-        expect(result[:chunks_used]).to eq([])
+        expect(result[:citations]).to eq([])
       end
 
       it "does not call PromptBuilder" do
@@ -172,7 +191,8 @@ RSpec.describe Rag::AnswerGenerator do
           chunk: chunk,
           document: document,
           content: chunk.content,
-          distance: 0.1
+          distance: 0.1,
+          position: chunk.position
         }]
       end
 
@@ -237,7 +257,7 @@ RSpec.describe Rag::AnswerGenerator do
     end
   end
 
-  describe "chunks_used formatting" do
+  describe "citations formatting" do
     let(:document1) { build(:document, id: 1, title: "Doc 1") }
     let(:document2) { build(:document, id: 2, title: "Doc 2") }
     let(:chunk1) { build(:chunk, id: 10, content: "Content 1", position: 0) }
@@ -245,8 +265,8 @@ RSpec.describe Rag::AnswerGenerator do
 
     let(:chunks_data) do
       [
-        { chunk: chunk1, document: document1, content: chunk1.content, distance: 0.1 },
-        { chunk: chunk2, document: document2, content: chunk2.content, distance: 0.2 }
+        { chunk: chunk1, document: document1, content: chunk1.content, distance: 0.1, position: 0 },
+        { chunk: chunk2, document: document2, content: chunk2.content, distance: 0.2, position: 1 }
       ]
     end
 
@@ -255,20 +275,39 @@ RSpec.describe Rag::AnswerGenerator do
       allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
     end
 
-    it "includes all chunks with their document titles" do
+    it "includes all citations with complete metadata" do
       result = described_class.generate(question)
 
-      expect(result[:chunks_used].length).to eq(2)
-      expect(result[:chunks_used][0]).to eq(id: 10, document_title: "Doc 1")
-      expect(result[:chunks_used][1]).to eq(id: 20, document_title: "Doc 2")
+      expect(result[:citations].length).to eq(2)
+      expect(result[:citations][0]).to include(
+        chunk_id: 10,
+        document_id: 1,
+        document_title: "Doc 1",
+        position: 0
+      )
+      expect(result[:citations][1]).to include(
+        chunk_id: 20,
+        document_id: 2,
+        document_title: "Doc 2",
+        position: 1
+      )
+    end
+
+    it "includes relevance scores calculated from distance" do
+      result = described_class.generate(question)
+
+      # Distance 0.1 should convert to relevance ~0.95 (1 - 0.1/2)
+      expect(result[:citations][0][:relevance]).to be_within(0.01).of(0.95)
+      # Distance 0.2 should convert to relevance ~0.90 (1 - 0.2/2)
+      expect(result[:citations][1][:relevance]).to be_within(0.01).of(0.90)
     end
   end
 
-  describe "chunks_used with nil document" do
+  describe "citations with nil document" do
     let(:chunk) { build(:chunk, id: 1, content: "Content", position: 0) }
     let(:chunks_data) do
       [
-        { chunk: chunk, document: nil, content: chunk.content, distance: 0.1 }
+        { chunk: chunk, document: nil, content: chunk.content, distance: 0.1, position: 0 }
       ]
     end
 
@@ -280,7 +319,12 @@ RSpec.describe Rag::AnswerGenerator do
     it "handles nil document gracefully" do
       result = described_class.generate(question)
 
-      expect(result[:chunks_used].first).to eq(id: 1, document_title: nil)
+      expect(result[:citations].first).to include(
+        chunk_id: 1,
+        document_id: nil,
+        document_title: "Unknown Document",
+        position: 0
+      )
     end
   end
 end

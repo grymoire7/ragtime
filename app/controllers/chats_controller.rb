@@ -48,7 +48,8 @@ class ChatsController < ApplicationController
               id: msg.id,
               role: msg.role,
               content: msg.content,
-              created_at: msg.created_at
+              created_at: msg.created_at,
+              metadata: msg.metadata || {}
             }
           end
         }

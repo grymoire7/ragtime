@@ -145,6 +145,44 @@ RSpec.describe Rag::ChunkRetriever do
       expect(results.first[:position]).to be_a(Integer)
     end
 
+    it "filters by created_after date when provided" do
+      query = "test query"
+
+      # Update document1 to be recent
+      document1.update!(created_at: 1.day.ago)
+      # Update document2 to be old
+      document2.update!(created_at: 10.days.ago)
+
+      results = described_class.retrieve(query, created_after: 7.days.ago)
+
+      expect(results).not_to be_empty
+      results.each do |result|
+        expect(result[:document].created_at).to be >= 7.days.ago
+        expect(result[:document].id).to eq(document1.id)
+      end
+    end
+
+    it "returns all chunks when created_after is nil" do
+      query = "test query"
+
+      results_without_filter = described_class.retrieve(query)
+      results_with_nil_filter = described_class.retrieve(query, created_after: nil)
+
+      expect(results_with_nil_filter.length).to eq(results_without_filter.length)
+    end
+
+    it "returns empty array when no documents match created_after" do
+      query = "test query"
+
+      # Make all documents old
+      document1.update!(created_at: 20.days.ago)
+      document2.update!(created_at: 30.days.ago)
+
+      results = described_class.retrieve(query, created_after: 1.day.ago)
+
+      expect(results).to eq([])
+    end
+
     context "when no chunks match the threshold" do
       it "returns empty array" do
         query = "test query"

@@ -11,10 +11,13 @@ class ChatResponseJob < ApplicationJob
       content: content
     )
 
-    # Create the assistant message with the RAG-generated answer
+    # Create the assistant message with the RAG-generated answer and citations
     assistant_message = chat.messages.create!(
       role: 'assistant',
-      content: result[:answer]
+      content: result[:answer],
+      metadata: {
+        citations: result[:citations]
+      }
     )
 
     # Broadcast the messages for Turbo Streams (HTML interface)
