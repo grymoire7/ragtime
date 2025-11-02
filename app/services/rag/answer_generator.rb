@@ -30,10 +30,19 @@ module Rag
         document_ids: document_ids
       )
 
-      # Step 2: Build prompt
+      # Step 2: If no chunks found, return default message without calling LLM
+      if chunks_data.empty?
+        return {
+          answer: "I don't have enough information in the provided documents to answer your question.",
+          chunks_used: [],
+          model: model
+        }
+      end
+
+      # Step 3: Build prompt
       prompt = PromptBuilder.build(question, chunks_data)
 
-      # Step 3: Generate answer using LLM
+      # Step 4: Generate answer using LLM
       answer = call_llm(prompt, model)
 
       # Return structured response

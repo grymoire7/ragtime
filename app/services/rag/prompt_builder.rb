@@ -9,23 +9,13 @@ module Rag
     end
 
     def build(question, chunks_data)
-      return build_no_context_prompt(question) if chunks_data.empty?
-
+      # Note: Empty chunks_data is now handled in AnswerGenerator
+      # This method assumes chunks_data is not empty
       context = format_context(chunks_data)
       build_rag_prompt(question, context)
     end
 
     private
-
-    def build_no_context_prompt(question)
-      <<~PROMPT
-        You are a helpful assistant. The user has asked a question, but no relevant documents were found to answer it.
-
-        Question: #{question}
-
-        Please let the user know that you don't have enough information in the provided documents to answer their question.
-      PROMPT
-    end
 
     def build_rag_prompt(question, context)
       <<~PROMPT

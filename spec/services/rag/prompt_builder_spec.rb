@@ -4,14 +4,8 @@ RSpec.describe Rag::PromptBuilder do
   describe ".build" do
     let(:question) { "What is the capital of France?" }
 
-    context "with no context chunks" do
-      it "returns a no-context prompt" do
-        result = described_class.build(question, [])
-
-        expect(result).to include("no relevant documents were found")
-        expect(result).to include(question)
-      end
-    end
+    # Note: Empty chunks are now handled in AnswerGenerator, not PromptBuilder
+    # PromptBuilder assumes it will always receive at least one chunk
 
     context "with context chunks" do
       let(:document1) { build(:document, title: "Geography Facts") }
@@ -132,9 +126,19 @@ RSpec.describe Rag::PromptBuilder do
   describe "#build" do
     let(:builder) { described_class.new }
     let(:question) { "Test question?" }
+    let(:document) { build(:document, title: "Test Doc") }
+    let(:chunk) { build(:chunk, content: "Test content", position: 0) }
+    let(:chunks_data) do
+      [{
+        chunk: chunk,
+        document: document,
+        content: chunk.content,
+        distance: 0.1
+      }]
+    end
 
     it "can be instantiated and called as an instance method" do
-      result = builder.build(question, [])
+      result = builder.build(question, chunks_data)
 
       expect(result).to be_a(String)
       expect(result).to include(question)

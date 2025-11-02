@@ -62,12 +62,13 @@ RSpec.describe DocumentProcessing::TextChunker do
         # Verify that chunks preserve paragraph structure
         result.each do |chunk|
           text = chunk[:text]
-          # If text contains periods, it should ideally end with one (complete sentences)
-          # or not contain periods at all (paragraph without sentence-ending periods)
+          # Edge case: very short chunks or text without periods might not have periods
+          # For chunks with periods, verify proper sentence boundaries
           if text.include?(".")
             # If it has periods, check it's not splitting mid-sentence
             # (This is a best-effort check - chunks may split between paragraphs)
-            expect(text).to match(/\.\s*\z|[^\.]/)
+            # Pattern: ends with a period OR contains no periods at all (from start to end)
+            expect(text).to match(/\.\s*\z|\A[^.]*\z/)
           end
         end
       end

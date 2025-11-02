@@ -82,7 +82,16 @@ RSpec.describe Rag::AnswerGenerator do
     end
 
     context "with custom options" do
-      let(:chunks_data) { [] }
+      let(:document) { build(:document, id: 1, title: "Test Doc") }
+      let(:chunk) { build(:chunk, id: 1, content: "Test content", position: 0) }
+      let(:chunks_data) do
+        [{
+          chunk: chunk,
+          document: document,
+          content: chunk.content,
+          distance: 0.1
+        }]
+      end
 
       before do
         allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
@@ -128,13 +137,12 @@ RSpec.describe Rag::AnswerGenerator do
     context "when no chunks are found" do
       before do
         allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
-        allow(Rag::PromptBuilder).to receive(:build).and_return("No context prompt")
       end
 
-      it "still generates an answer" do
+      it "returns default message without calling LLM" do
         result = described_class.generate(question)
 
-        expect(result[:answer]).to be_present
+        expect(result[:answer]).to eq("I don't have enough information in the provided documents to answer your question.")
       end
 
       it "has empty chunks_used" do
@@ -143,16 +151,33 @@ RSpec.describe Rag::AnswerGenerator do
         expect(result[:chunks_used]).to eq([])
       end
 
-      it "calls PromptBuilder with empty chunks" do
-        expect(Rag::PromptBuilder).to receive(:build).with(question, [])
+      it "does not call PromptBuilder" do
+        expect(Rag::PromptBuilder).not_to receive(:build)
+
+        described_class.generate(question)
+      end
+
+      it "does not call LLM" do
+        expect(RubyLLM).not_to receive(:chat)
 
         described_class.generate(question)
       end
     end
 
     context "when LLM call fails" do
+      let(:document) { build(:document, id: 1, title: "Test Doc") }
+      let(:chunk) { build(:chunk, id: 1, content: "Test content", position: 0) }
+      let(:chunks_data) do
+        [{
+          chunk: chunk,
+          document: document,
+          content: chunk.content,
+          distance: 0.1
+        }]
+      end
+
       before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
+        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
         allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
         allow(RubyLLM).to receive(:chat).and_raise(StandardError.new("API Error"))
       end
@@ -199,11 +224,9 @@ RSpec.describe Rag::AnswerGenerator do
 
   describe "#generate" do
     let(:generator) { described_class.new }
-    let(:chunks_data) { [] }
 
     before do
-      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-      allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
+      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
     end
 
     it "can be instantiated and called as an instance method" do

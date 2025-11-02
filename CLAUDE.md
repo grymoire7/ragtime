@@ -309,7 +309,7 @@ Focus on getting core functionality working end-to-end before polish:
 
 **Tests**: Tests are important and should be added and run regularly.
   sqlite-vec limitations may require careful test design and require early
-  testing where it is involved.
+  testing where it is involved. We unit test with rspec.
 **Critical Path**: Working demo that's deployable and interview-ready
 **Nice-to-Have**: Streaming, advanced features, extensive test coverage
 

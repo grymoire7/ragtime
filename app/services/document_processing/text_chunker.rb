@@ -18,7 +18,11 @@ module DocumentProcessing
       @text = text
       @chunk_size = chunk_size
       @overlap = overlap
-      @encoder = Tiktoken.encoding_for_model("gpt-4")
+      # Use cl100k_base encoding for token counting (used by GPT-4/GPT-3.5-turbo)
+      # Note: This is an approximation for non-OpenAI models (Gemma, Claude, etc.)
+      # but provides reasonable chunk sizing since most tokenizers produce similar counts.
+      # The overlap buffer ensures we don't lose context even with slight variations.
+      @encoder = Tiktoken.get_encoding("cl100k_base")
     end
 
     def chunk
