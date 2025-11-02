@@ -19,11 +19,13 @@ solid engineering practices and modern AI integration.
 - ✅ Phase 4: Improved retrieval and citations
 
 **Phase 4 Achievements**:
-- Date-based filtering (created_after parameter)
+- Date-based filtering (created_after parameter - backend only)
 - Citation metadata storage (JSON column on messages)
 - Citation display with inline footnote style
 - Relevance scores shown for each source
 - Comprehensive test coverage (41 specs passing)
+
+**Note**: Date filtering backend is complete but frontend UI controls deferred to Phase 5
 
 **Next Phases**:
 - Phase 5: Interactive citations and document navigation
@@ -275,8 +277,10 @@ Solid Queue runs automatically in development mode.
 - ✅ Relevance scores for citations
 
 ### Planned Enhancements (Phases 5-9)
+- Phase 5: Date filtering UI controls (backend ready, needs frontend)
 - Phase 5: Clickable citation links to documents
 - Phase 5: Document detail view with chunks
+- Phase 5: Chunk highlighting in document view
 - Phase 6: Document preview/viewer
 - Phase 6: Conversation management (clear, delete)
 - Phase 6: Basic authentication

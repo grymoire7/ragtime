@@ -85,6 +85,10 @@ finish early, streaming is a great polish feature.
 - Add clickable citation links that jump to source documents
 - Implement document detail view showing chunks
 - Add chunk highlighting in document view
+- **Add frontend UI for date filtering** (backend already implemented in Phase 4)
+  - Date range picker or "recent documents" toggle
+  - Pass `created_after` parameter to MessagesController
+  - Update ChatInterface to show active filters
 - Consider: Document preview modal from citations
 - Consider: Citation tooltips showing chunk content on hover
 
