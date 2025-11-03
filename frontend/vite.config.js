@@ -13,5 +13,9 @@ export default defineConfig({
       '/messages': 'http://localhost:3000',
       '/models': 'http://localhost:3000'
     }
+  },
+  test: {
+    environment: 'happy-dom',
+    globals: true
   }
 })
