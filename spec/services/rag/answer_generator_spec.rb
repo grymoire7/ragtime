@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Rag::AnswerGenerator do
   let(:question) { "What is the capital of France?" }
-  let(:mock_llm_response) { double("Response", content: "Paris is the capital of France.") }
+  let(:mock_llm_response) { double("Response", content: "Paris is the capital of France [1].") }
   let(:mock_chat) { double("Chat", ask: mock_llm_response) }
 
   before do
@@ -36,7 +36,7 @@ RSpec.describe Rag::AnswerGenerator do
         result = described_class.generate(question)
 
         expect(result).to be_a(Hash)
-        expect(result[:answer]).to eq("Paris is the capital of France.")
+        expect(result[:answer]).to eq("Paris is the capital of France [1].")
       end
 
       it "includes citations in response with full metadata" do
@@ -62,8 +62,7 @@ RSpec.describe Rag::AnswerGenerator do
       it "calls ChunkRetriever with correct parameters" do
         expect(Rag::ChunkRetriever).to receive(:retrieve).with(
           question,
-          limit: 5,
-          distance_threshold: 1.0,
+          limit: 3,
           document_ids: nil,
           created_after: nil
         )
@@ -262,6 +261,8 @@ RSpec.describe Rag::AnswerGenerator do
     let(:document2) { build(:document, id: 2, title: "Doc 2") }
     let(:chunk1) { build(:chunk, id: 10, content: "Content 1", position: 0) }
     let(:chunk2) { build(:chunk, id: 20, content: "Content 2", position: 1) }
+    let(:mock_llm_response_with_two_citations) { double("Response", content: "Answer using both sources [1][2].") }
+    let(:mock_chat_with_two_citations) { double("Chat", ask: mock_llm_response_with_two_citations) }
 
     let(:chunks_data) do
       [
@@ -273,6 +274,7 @@ RSpec.describe Rag::AnswerGenerator do
     before do
       allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
       allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
+      allow(RubyLLM).to receive(:chat).and_return(mock_chat_with_two_citations)
     end
 
     it "includes all citations with complete metadata" do
@@ -303,8 +305,49 @@ RSpec.describe Rag::AnswerGenerator do
     end
   end
 
+  describe "citation renumbering" do
+    let(:document1) { build(:document, id: 1, title: "Doc 1") }
+    let(:document2) { build(:document, id: 2, title: "Doc 2") }
+    let(:document3) { build(:document, id: 3, title: "Doc 3") }
+    let(:chunk1) { build(:chunk, id: 10, content: "Content 1", position: 0) }
+    let(:chunk2) { build(:chunk, id: 20, content: "Content 2", position: 1) }
+    let(:chunk3) { build(:chunk, id: 30, content: "Content 3", position: 2) }
+
+    # LLM only cites [2] and [3], skipping [1]
+    let(:mock_llm_response_sparse) { double("Response", content: "Answer from sources [2] and [3].") }
+    let(:mock_chat_sparse) { double("Chat", ask: mock_llm_response_sparse) }
+
+    let(:chunks_data) do
+      [
+        { chunk: chunk1, document: document1, content: chunk1.content, distance: 0.1, position: 0 },
+        { chunk: chunk2, document: document2, content: chunk2.content, distance: 0.2, position: 1 },
+        { chunk: chunk3, document: document3, content: chunk3.content, distance: 0.3, position: 2 }
+      ]
+    end
+
+    before do
+      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
+      allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
+      allow(RubyLLM).to receive(:chat).and_return(mock_chat_sparse)
+    end
+
+    it "renumbers citations sequentially when LLM skips some" do
+      result = described_class.generate(question)
+
+      # Should only include citations [2] and [3] from the original prompt
+      expect(result[:citations].length).to eq(2)
+      expect(result[:citations][0][:chunk_id]).to eq(20) # Original [2]
+      expect(result[:citations][1][:chunk_id]).to eq(30) # Original [3]
+
+      # Answer should be renumbered to [1] and [2]
+      expect(result[:answer]).to eq("Answer from sources [1] and [2].")
+    end
+  end
+
   describe "citations with nil document" do
     let(:chunk) { build(:chunk, id: 1, content: "Content", position: 0) }
+    let(:mock_llm_response_nil_doc) { double("Response", content: "Answer from unknown source [1].") }
+    let(:mock_chat_nil_doc) { double("Chat", ask: mock_llm_response_nil_doc) }
     let(:chunks_data) do
       [
         { chunk: chunk, document: nil, content: chunk.content, distance: 0.1, position: 0 }
@@ -314,6 +357,7 @@ RSpec.describe Rag::AnswerGenerator do
     before do
       allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
       allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
+      allow(RubyLLM).to receive(:chat).and_return(mock_chat_nil_doc)
     end
 
     it "handles nil document gracefully" do

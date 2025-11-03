@@ -25,10 +25,25 @@ RSpec.describe "Messages", type: :request do
     it "enqueues ChatResponseJob with correct parameters" do
       content = "Tell me about Ruby on Rails"
 
-      expect(ChatResponseJob).to receive(:perform_later).with(chat.id, content)
+      expect(ChatResponseJob).to receive(:perform_later).with(chat.id, content, {})
 
       post chat_messages_path(chat),
         params: { message: { content: content } },
+        headers: { 'Accept' => 'application/json' }
+    end
+
+    it "enqueues ChatResponseJob with date filter when created_after is provided" do
+      content = "What did we discuss recently?"
+      created_after = "2024-01-01T00:00:00Z"
+
+      expect(ChatResponseJob).to receive(:perform_later).with(
+        chat.id,
+        content,
+        hash_including(created_after: kind_of(ActiveSupport::TimeWithZone))
+      )
+
+      post chat_messages_path(chat),
+        params: { message: { content: content }, created_after: created_after },
         headers: { 'Accept' => 'application/json' }
     end
 

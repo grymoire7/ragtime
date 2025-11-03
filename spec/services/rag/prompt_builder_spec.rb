@@ -67,8 +67,9 @@ RSpec.describe Rag::PromptBuilder do
       it "includes instructions to answer based on context" do
         result = described_class.build(question, chunks_data)
 
-        expect(result).to include("based ONLY on the context")
-        expect(result).to include("Cite which documents")
+        expect(result).to include("CRITICAL INSTRUCTIONS")
+        expect(result).to include("VERIFY BEFORE CITING")
+        expect(result).to include("CITE ONLY WHAT YOU USE")
       end
 
       it "separates chunks with dividers" do

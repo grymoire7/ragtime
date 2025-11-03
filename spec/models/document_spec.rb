@@ -4,6 +4,47 @@ RSpec.describe Document, type: :model do
   describe "associations" do
     it { is_expected.to have_many(:chunks).dependent(:destroy) }
     it { is_expected.to have_one_attached(:file) }
+
+    describe "chunks ordering" do
+      it "returns chunks ordered by position ascending" do
+        document = create(:document)
+        chunk_2 = create(:chunk, document: document, position: 2, content: "Third chunk")
+        chunk_0 = create(:chunk, document: document, position: 0, content: "First chunk")
+        chunk_1 = create(:chunk, document: document, position: 1, content: "Second chunk")
+
+        # Reload to get fresh association query
+        document.reload
+
+        expect(document.chunks.to_a).to eq([chunk_0, chunk_1, chunk_2])
+        expect(document.chunks.map(&:position)).to eq([0, 1, 2])
+      end
+
+      it "maintains order when chunks are created out of sequence" do
+        document = create(:document)
+
+        # Create chunks in reverse order
+        (4).downto(0).each do |i|
+          create(:chunk, document: document, position: i, content: "Chunk #{i}")
+        end
+
+        document.reload
+
+        expect(document.chunks.map(&:position)).to eq([0, 1, 2, 3, 4])
+      end
+
+      it "returns chunks in position order even after new chunks are added" do
+        document = create(:document)
+        chunk_0 = create(:chunk, document: document, position: 0)
+        chunk_2 = create(:chunk, document: document, position: 2)
+
+        # Add chunk in the middle
+        chunk_1 = create(:chunk, document: document, position: 1)
+
+        document.reload
+
+        expect(document.chunks.to_a).to eq([chunk_0, chunk_1, chunk_2])
+      end
+    end
   end
 
   describe "validations" do
