@@ -17,18 +17,18 @@ solid engineering practices and modern AI integration.
 - ✅ Phase 2: Basic RAG implementation
 - ✅ Phase 3: Vue.js frontend foundation
 - ✅ Phase 4: Improved retrieval and citations
+- ✅ Phase 5: Interactive citations and document navigation
 
-**Phase 4 Achievements**:
-- Date-based filtering (created_after parameter - backend only)
-- Citation metadata storage (JSON column on messages)
-- Citation display with inline footnote style
-- Relevance scores shown for each source
-- Comprehensive test coverage (41 specs passing)
-
-**Note**: Date filtering backend is complete but frontend UI controls deferred to Phase 5
+**Phase 5 Achievements**:
+- Vue Router integration for client-side navigation
+- DocumentDetail view showing all document chunks
+- Clickable citations linking to source documents with chunk highlighting
+- Chunk highlighting via URL query parameters
+- Date filtering UI with "Recent documents only" checkbox
+- Complete date filter integration (frontend + backend)
+- Comprehensive test coverage (195 specs passing)
 
 **Next Phases**:
-- Phase 5: Interactive citations and document navigation
 - Phase 6: Polish and error handling
 - Phase 7: Testing and refinement
 - Phase 8: Deployment and documentation
@@ -53,9 +53,11 @@ solid engineering practices and modern AI integration.
 
 ### Frontend
 - Vue.js 3 with Composition API
+- Vue Router 4 for client-side navigation
 - Vite for build tooling
 - Polling-based chat interface (no ActionCable streaming)
-- Citation display with inline footnotes
+- Interactive citations with document navigation
+- Date filtering UI for recent documents
 
 ## Architecture
 

@@ -81,16 +81,17 @@ finish early, streaming is a great polish feature.
 - ⏭️ **Deferred to Phase 5**: Jump-to-document/chunk links (IDs stored, links not yet implemented)
 - ❌ **Not needed**: Chunking semantic awareness (already implemented in Phase 1)
 
-**Phase 5: Interactive citations and document navigation**
-- Add clickable citation links that jump to source documents
-- Implement document detail view showing chunks
-- Add chunk highlighting in document view
-- **Add frontend UI for date filtering** (backend already implemented in Phase 4)
-  - Date range picker or "recent documents" toggle
-  - Pass `created_after` parameter to MessagesController
-  - Update ChatInterface to show active filters
-- Consider: Document preview modal from citations
-- Consider: Citation tooltips showing chunk content on hover
+**Phase 5: Interactive citations and document navigation** ✅ COMPLETE
+- ✅ Add clickable citation links that jump to source documents
+- ✅ Implement document detail view showing chunks
+- ✅ Add chunk highlighting in document view
+- ✅ **Add frontend UI for date filtering** (backend already implemented in Phase 4)
+  - ✅ "Recent documents only" checkbox (last 7 days)
+  - ✅ Pass `created_after` parameter to MessagesController
+  - ✅ Update ChatInterface to show active filters
+  - ✅ Vue Router integration for navigation
+- ⏭️ Consider: Document preview modal from citations (deferred to Phase 9)
+- ⏭️ Consider: Citation tooltips showing chunk content on hover (deferred to Phase 9)
 
 **Phase 6: Polish and error handling**
 - Handle edge cases (empty documents, unsupported formats)
@@ -100,12 +101,19 @@ finish early, streaming is a great polish feature.
 - Improve loading states and user feedback
 - Add basic authentication (Devise or simple token auth)
 
-**Phase 7: Testing and refinement**
-- Expand test coverage (document processing, vector search, API endpoints)
-- Test with various document types and sizes
-- Refine prompts for better answer quality
-- Performance testing with larger document sets
-- Cross-browser testing for Vue.js frontend
+**Phase 7: Testing and refinement** 🔄 IN PROGRESS
+- ✅ Core regression tests implemented (41 backend specs, 20 frontend specs)
+  - Document model tests for chunk ordering (guards against display bugs)
+  - DocumentDetailView tests for chunk highlighting and visibility
+  - ChatInterface tests for citation formatting
+- 🔄 Deferred for future (see Testing Strategy section below)
+  - Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
+  - E2E tests with Capybara or Playwright for user workflows
+  - RAG quality metrics and optional VCR-based LLM regression tests
+  - Performance tests for vector search at scale
+  - Cross-browser testing for Vue.js frontend
+- Refine prompts for better answer quality (ongoing)
+- Test with various document types and sizes (manual testing)
 
 **Phase 8: Deployment and documentation**
 - Deploy to Fly.io or Render
@@ -116,63 +124,13 @@ finish early, streaming is a great polish feature.
 - Write technical blog post explaining architecture
 
 **Phase 9: Optional enhancements** (if time permits)
+- Replace dollar sign with piano (🎹) symbol as app icon
 - ActionCable streaming for real-time responses
 - Advanced UI/UX polish
 - Document preview or PDF viewer
 - Multi-document conversations with filtering UI
 - Export conversation history
 - Advanced analytics (popular questions, document usage)
-
-## Technical implementation details
-
-**Document chunking strategy:**
-```ruby
-# Pseudocode - adjust for your preference
-class DocumentChunker
-  CHUNK_SIZE = 800 # tokens, roughly 600 words
-  OVERLAP = 200    # tokens overlap between chunks
-  
-  def chunk(text)
-    # Split on paragraphs first
-    # Then combine into appropriately-sized chunks
-    # Maintain overlap for context continuity
-  end
-end
-```
-
-**Vector search query:**
-```ruby
-# Using sqlite-vec
-def search_similar_chunks(query_embedding, limit: 5)
-  # Store embeddings as BLOB in SQLite
-  # Use vec_distance_cosine for similarity
-  Chunk.select(
-    "*, vec_distance_cosine(embedding, ?) as distance"
-  ).where(
-    "distance < 0.5"  # similarity threshold
-  ).order("distance").limit(limit)
-end
-```
-
-**RAG prompt pattern:**
-```ruby
-def build_prompt(question, relevant_chunks)
-  context = relevant_chunks.map(&:text).join("\n\n")
-  
-  <<~PROMPT
-    You are answering questions based on provided documents.
-    
-    Context from documents:
-    #{context}
-    
-    Question: #{question}
-    
-    Provide a clear answer based only on the context above.
-    If the answer isn't in the context, say so.
-    Cite which document sections you used.
-  PROMPT
-end
-```
 
 ## Risk mitigation
 
@@ -193,6 +151,66 @@ end
 - ActionCable streaming
 - Document preview
 - Advanced filtering
+
+## Testing strategy
+
+### Implemented tests (high value-to-effort ratio)
+
+**Backend unit tests (41 specs passing)**
+- Document model: chunk ordering, associations, validations, status transitions
+- Chunk model: vector search, embeddings, position tracking
+- RAG services: ChunkRetriever with date filtering, PromptBuilder formatting, AnswerGenerator citation extraction
+- Document processing: TextExtractor, TextChunker, EmbeddingGenerator
+- Controllers: Documents, Chats, Messages endpoints
+
+**Frontend unit tests (20 specs passing)**
+- DocumentDetailView: chunk highlighting, visibility filtering, "Show all context" toggle
+- ChatInterface: citation formatting with chunk position, relevance score display, metadata checks
+
+These tests provide rapid feedback on regressions in critical bugs we encountered:
+1. Chunk ordering breaking document display
+2. Wrong chunks being highlighted
+3. Citation titles being indistinguishable for same-document chunks
+
+### Deferred tests (documented for future implementation)
+
+**Integration tests for RAG pipeline**
+- Full flow: question → vector search → prompt building → LLM call → citation extraction
+- Date filtering end-to-end behavior
+- Citation renumbering when LLM skips citation numbers
+- Error handling when no relevant chunks found
+
+**E2E tests with Capybara or Playwright**
+- Upload document → wait for processing → ask question → verify cited answer
+- Navigate to document detail → verify correct chunk highlighted
+- Toggle date filter → verify filtered results
+- Multi-document conversations with different relevance thresholds
+
+**RAG quality metrics (optional)**
+- Precision/recall of chunk retrieval vs golden dataset
+- Citation accuracy (cited chunks actually contain answer)
+- LLM response quality benchmarks
+- Optional: VCR-based LLM regression tests (record/replay LLM responses for deterministic testing)
+
+**Performance tests**
+- Vector search latency with 100+ documents
+- Concurrent chat requests handling
+- Memory usage during document processing
+- Embedding generation batch optimization
+
+**Cross-browser testing**
+- Chrome, Firefox, Safari compatibility
+- Mobile responsive design validation
+- Citation link navigation on touch devices
+
+### Testing philosophy for this project
+
+Given the portfolio project timeline, we prioritized:
+1. **Fast unit tests** that catch regressions in bugs we actually encountered
+2. **Critical path coverage** for chunk ordering and citation display logic
+3. **Defer expensive tests** until the system proves valuable in production
+
+This approach balances quality with velocity—we have safety nets for known failure modes without gold-plating test coverage for hypothetical issues.
 
 ## My honest assessment
 
