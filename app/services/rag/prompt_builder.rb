@@ -26,12 +26,21 @@ module Rag
 
         Question: #{question}
 
-        Instructions:
-        - Provide a clear, concise answer based ONLY on the context above
-        - If the answer is not fully contained in the context, say so explicitly
-        - Cite which documents you used by mentioning the document titles
-        - If multiple documents provide relevant information, synthesize them in your answer
-        - Be direct and factual
+        CRITICAL INSTRUCTIONS for answering:
+
+        1. VERIFY BEFORE CITING: Before citing any source, verify it contains information that DIRECTLY answers the question asked. A chunk is only relevant if it addresses the specific question, not just related topics.
+
+        2. READ CAREFULLY: Just because a chunk mentions words from the question doesn't mean it answers the question. Check if the chunk actually provides the answer.
+
+        3. CITE ONLY WHAT YOU USE: Only include citation numbers [1], [2], etc. for chunks you actually quote or reference in your answer. If a chunk is irrelevant, skip it completely.
+
+        4. BE STRICT: If no chunks clearly answer the question, respond with: "I don't have enough information to answer this question based on the provided documents."
+
+        5. USE DIRECT QUOTES: When possible, quote directly from relevant chunks rather than paraphrasing.
+
+        6. NO SPECULATION: Do not make inferences or connections that aren't explicitly stated in the chunks.
+
+        7. BE CONCISE: Keep your answer focused on the question asked.
 
         Answer:
       PROMPT

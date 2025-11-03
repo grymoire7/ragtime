@@ -9,7 +9,11 @@ class MessagesController < ApplicationController
       end
     end
 
-    ChatResponseJob.perform_later(@chat.id, content)
+    # Extract optional filter parameters
+    options = {}
+    options[:created_after] = Time.zone.parse(params[:created_after]) if params[:created_after].present?
+
+    ChatResponseJob.perform_later(@chat.id, content, options)
 
     respond_to do |format|
       format.json { render json: { message: "Message queued for processing" }, status: :accepted }

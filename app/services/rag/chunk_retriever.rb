@@ -4,7 +4,8 @@ module Rag
     DEFAULT_LIMIT = 5
     # Default distance threshold for cosine similarity
     # Lower values = more similar (0 = identical, 2 = opposite)
-    DEFAULT_DISTANCE_THRESHOLD = 1.0
+    # 0.7 threshold = ~65% relevance minimum (filters out low-quality matches)
+    DEFAULT_DISTANCE_THRESHOLD = 0.7
 
     # Retrieve the most relevant chunks for a query
     # @param query [String] the user's question or search query

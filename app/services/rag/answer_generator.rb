@@ -3,8 +3,8 @@ module Rag
     # Generate an answer to a question using RAG
     # @param question [String] the user's question
     # @param options [Hash] optional parameters
-    # @option options [Integer] :limit number of chunks to retrieve (default: 5)
-    # @option options [Float] :distance_threshold maximum distance for relevant chunks
+    # @option options [Integer] :limit number of chunks to retrieve (default: 3)
+    # @option options [Float] :distance_threshold maximum distance for relevant chunks (default: 0.7 from ChunkRetriever)
     # @option options [Array<Integer>] :document_ids filter to specific documents
     # @option options [DateTime] :created_after filter to documents created after this date
     # @option options [String] :model the LLM model to use (default: claude-3-5-haiku-latest)
@@ -15,8 +15,11 @@ module Rag
 
     def generate(question, options = {})
       # Extract options with defaults
-      limit = options.fetch(:limit, 5)
-      distance_threshold = options.fetch(:distance_threshold, 1.0)
+      # Use 3 chunks by default for more focused answers
+      limit = options.fetch(:limit, 3)
+      # Use ChunkRetriever's default threshold (0.7) for better quality
+      # Only override if explicitly provided
+      distance_threshold = options[:distance_threshold]
       document_ids = options[:document_ids]
       created_after = options[:created_after]
 
@@ -25,13 +28,15 @@ module Rag
       model = options.fetch(:model, chat_config[:model])
 
       # Step 1: Retrieve relevant chunks
-      chunks_data = ChunkRetriever.retrieve(
-        question,
+      retrieval_options = {
         limit: limit,
-        distance_threshold: distance_threshold,
         document_ids: document_ids,
         created_after: created_after
-      )
+      }
+      # Only pass distance_threshold if explicitly provided, otherwise use ChunkRetriever's default
+      retrieval_options[:distance_threshold] = distance_threshold if distance_threshold.present?
+
+      chunks_data = ChunkRetriever.retrieve(question, **retrieval_options)
 
       # Step 2: If no chunks found, return default message without calling LLM
       if chunks_data.empty?
@@ -49,12 +54,14 @@ module Rag
       answer = call_llm(prompt, model)
 
       # Step 5: Format citations with full metadata
-      citations = format_citations(chunks_data)
+      # Only include citations that were actually referenced in the answer
+      all_citations = format_citations(chunks_data)
+      used_citations, renumbered_answer = filter_and_renumber_citations(answer, all_citations)
 
       # Return structured response
       {
-        answer: answer,
-        citations: citations,
+        answer: renumbered_answer,
+        citations: used_citations,
         model: model
       }
     rescue => e
@@ -70,6 +77,36 @@ module Rag
     end
 
     private
+
+    def filter_and_renumber_citations(answer, all_citations)
+      # Parse the answer for citation references like [1], [2], [3], etc.
+      citation_numbers = answer.scan(/\[(\d+)\]/).flatten.map(&:to_i).uniq.sort
+
+      # If no citations found in answer, return empty array and original answer
+      return [[], answer] if citation_numbers.empty?
+
+      # Filter citations to only include those actually referenced
+      # Citation numbers are 1-indexed, array is 0-indexed
+      used_citations = citation_numbers.filter_map do |num|
+        all_citations[num - 1] if num > 0 && num <= all_citations.length
+      end
+
+      # Build a mapping from old citation numbers to new sequential numbers
+      # e.g., if answer has [2] and [5], map: {2 => 1, 5 => 2}
+      citation_mapping = {}
+      citation_numbers.each_with_index do |old_num, new_index|
+        citation_mapping[old_num] = new_index + 1
+      end
+
+      # Renumber citations in the answer text
+      renumbered_answer = answer.gsub(/\[(\d+)\]/) do |match|
+        old_num = $1.to_i
+        new_num = citation_mapping[old_num]
+        new_num ? "[#{new_num}]" : match
+      end
+
+      [used_citations, renumbered_answer]
+    end
 
     def format_citations(chunks_data)
       chunks_data.map do |chunk_info|
