@@ -22,6 +22,22 @@
     </div>
 
     <div v-else class="chat-container">
+      <div class="filter-bar">
+        <label class="filter-checkbox">
+          <input type="checkbox" v-model="filterRecentOnly" />
+          <span class="checkbox-label">
+            <svg class="checkbox-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            Search recent documents only (last 7 days)
+          </span>
+        </label>
+        <span v-if="filterRecentOnly" class="filter-active-badge">
+          Filter active
+        </span>
+      </div>
+
       <div ref="messagesContainer" class="messages-container">
         <div v-if="messages.length === 0 && !loading" class="empty-messages">
           <p>No messages yet. Ask a question to get started!</p>
@@ -44,15 +60,19 @@
             <div v-if="message.role === 'assistant' && hasCitations(message)" class="citations">
               <div class="citations-header">Sources:</div>
               <div class="citations-list">
-                <div
+                <router-link
                   v-for="(citation, index) in getCitations(message)"
                   :key="index"
+                  :to="getCitationLink(citation)"
                   class="citation-item"
                 >
                   <span class="citation-number">[{{ index + 1 }}]</span>
-                  <span class="citation-title">{{ citation.document_title }}</span>
+                  <span class="citation-title">{{ formatCitationTitle(citation) }}</span>
                   <span class="citation-relevance">(relevance: {{ formatRelevance(citation.relevance) }})</span>
-                </div>
+                  <svg class="citation-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 5l7 7-7 7"/>
+                  </svg>
+                </router-link>
               </div>
             </div>
             <div class="message-meta">{{ formatTime(message.created_at) }}</div>
@@ -108,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue';
+import { ref, nextTick, watch, onActivated } from 'vue';
 import { chatsAPI } from '../services/api';
 
 const currentChat = ref(null);
@@ -119,6 +139,7 @@ const loading = ref(false);
 const error = ref('');
 const messagesContainer = ref(null);
 const textarea = ref(null);
+const filterRecentOnly = ref(false);
 
 async function createChat() {
   loading.value = true;
@@ -158,8 +179,17 @@ async function sendMessage() {
   error.value = '';
 
   try {
-    // Send message to API
-    await chatsAPI.sendMessage(currentChat.value.id, content);
+    // Build options for message request
+    const options = {};
+    if (filterRecentOnly.value) {
+      // Calculate date 7 days ago
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      options.created_after = sevenDaysAgo.toISOString();
+    }
+
+    // Send message to API with filter options
+    await chatsAPI.sendMessage(currentChat.value.id, content, options);
 
     // Poll for updates since the response is generated asynchronously
     // Poll every 500ms for up to 30 seconds
@@ -268,8 +298,32 @@ function formatRelevance(relevance) {
   return 'N/A';
 }
 
+function formatCitationTitle(citation) {
+  let title = citation.document_title;
+
+  // Add chunk position if available to distinguish multiple citations from same document
+  if (citation.position !== undefined && citation.position !== null) {
+    title += ` (Chunk #${citation.position + 1})`;
+  }
+
+  return title;
+}
+
+function getCitationLink(citation) {
+  const path = `/documents/${citation.document_id}`;
+  const query = citation.chunk_id ? { highlight: citation.chunk_id } : {};
+  return { path, query };
+}
+
 watch(messages, () => {
   scrollToBottom();
+});
+
+// Scroll to bottom when returning from document detail view
+onActivated(() => {
+  if (currentChat.value && messages.value.length > 0) {
+    scrollToBottom();
+  }
 });
 </script>
 
@@ -381,6 +435,54 @@ watch(messages, () => {
   overflow: hidden;
 }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background-color: #faf5ff;
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  margin-right: 0.5rem;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b46c1;
+  font-weight: 500;
+}
+
+.checkbox-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: #9f7aea;
+}
+
+.filter-active-badge {
+  padding: 0.25rem 0.75rem;
+  background-color: #9f7aea;
+  color: white;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -484,10 +586,22 @@ watch(messages, () => {
 
 .citation-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
   line-height: 1.4;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.citation-item:hover {
+  background-color: #e6fffa;
+  transform: translateX(4px);
 }
 
 .citation-number {
@@ -499,11 +613,26 @@ watch(messages, () => {
 .citation-title {
   color: #2d3748;
   font-weight: 500;
+  flex: 1;
 }
 
 .citation-relevance {
   color: #718096;
   font-size: 0.8125rem;
+}
+
+.citation-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+  color: #9f7aea;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.citation-item:hover .citation-icon {
+  opacity: 1;
 }
 
 .typing-indicator {

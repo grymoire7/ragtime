@@ -54,10 +54,17 @@ export const chatsAPI = {
   },
 
   // Send a message in a chat
-  sendMessage(chatId, content) {
-    return api.post(`/chats/${chatId}/messages`, {
+  sendMessage(chatId, content, options = {}) {
+    const payload = {
       message: { content }
-    });
+    };
+
+    // Add optional filter parameters
+    if (options.created_after) {
+      payload.created_after = options.created_after;
+    }
+
+    return api.post(`/chats/${chatId}/messages`, payload);
   }
 };
 
