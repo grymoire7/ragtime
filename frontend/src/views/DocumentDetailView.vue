@@ -15,8 +15,18 @@
         <p>Loading document...</p>
       </div>
 
-      <div v-else-if="error" class="error-message">
-        {{ error }}
+      <div v-else-if="error" class="error-banner">
+        <div class="error-content">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#c53030" stroke-width="2"></circle>
+            <line x1="12" y1="8" x2="12" y2="12" stroke="#c53030" stroke-width="2" stroke-linecap="round"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke="#c53030" stroke-width="2" stroke-linecap="round"></line>
+          </svg>
+          <span>{{ error }}</span>
+        </div>
+        <button @click="error = ''" class="dismiss-btn" aria-label="Dismiss error">
+          ×
+        </button>
       </div>
 
       <div v-else-if="document" class="document-content">
@@ -274,12 +284,76 @@ function formatStatus(status) {
   to { transform: rotate(360deg); }
 }
 
-.error-message {
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 1rem;
-  background-color: #fed7d7;
-  color: #c53030;
+  background-color: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-left: 4px solid #c53030;
   border-radius: 6px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.error-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.error-icon circle,
+.error-icon line {
+  stroke: #c53030;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.error-content span {
+  color: #742a2a;
   font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.dismiss-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #c53030;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  font-family: Arial, sans-serif;
+}
+
+.dismiss-btn:hover {
+  background-color: #fed7d7;
 }
 
 .document-content {
