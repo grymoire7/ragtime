@@ -2,6 +2,9 @@ Rails.application.routes.draw do
   resources :documents, only: [:index, :show, :create, :destroy]
 
   resources :chats do
+    member do
+      delete :clear
+    end
     resources :messages, only: [:create]
   end
   resources :models, only: [:index, :show] do

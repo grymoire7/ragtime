@@ -2,12 +2,37 @@
   <div class="chat-interface">
     <div class="chat-header">
       <h2>Ask Questions</h2>
-      <button v-if="currentChat" @click="startNewChat" class="new-chat-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        New Chat
-      </button>
+      <div v-if="currentChat" class="chat-actions">
+        <button @click="startNewChat" class="new-chat-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          New Chat
+        </button>
+        <div class="dropdown">
+          <button @click="showMenu = !showMenu" class="menu-btn">
+            ⋮
+          </button>
+          <div v-if="showMenu" class="dropdown-menu">
+            <button @click="clearConversation" class="dropdown-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Clear messages
+            </button>
+            <button @click="deleteConversation" class="dropdown-item danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Delete conversation
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-if="!currentChat" class="no-chat-state">
@@ -56,7 +81,23 @@
             </svg>
           </div>
           <div class="message-content">
-            <div class="message-text">{{ message.content }}</div>
+            <div v-if="message.role === 'assistant' && hasEmptyContext(message)"
+                 class="empty-context-box"
+                 :class="`empty-context-${getEmptyContextType(message)}`">
+              <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <div class="empty-context-content">
+                <div class="empty-context-title">{{ getEmptyContextTitle(message) }}</div>
+                <div class="empty-context-description">{{ message.content }}</div>
+                <div v-if="getEmptyContextType(message) === 'no_recent_documents'" class="empty-context-action">
+                  Try turning off the "Recent documents only" filter above.
+                </div>
+              </div>
+            </div>
+            <div v-else class="message-text">{{ message.content }}</div>
             <div v-if="message.role === 'assistant' && hasCitations(message)" class="citations">
               <div class="citations-header">Sources:</div>
               <div class="citations-list">
@@ -111,24 +152,31 @@
             :disabled="!messageInput.trim() || sending"
             class="send-btn"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
+            ▶
           </button>
         </div>
         <p class="input-hint">Press Enter to send, Shift+Enter for new line</p>
       </form>
     </div>
 
-    <div v-if="error" class="error-message">
-      {{ error }}
+    <div v-if="error" class="error-banner">
+      <div class="error-content">
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#c53030" stroke-width="2"></circle>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="#c53030" stroke-width="2" stroke-linecap="round"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16" stroke="#c53030" stroke-width="2" stroke-linecap="round"></line>
+        </svg>
+        <span>{{ error }}</span>
+      </div>
+      <button @click="error = ''" class="dismiss-btn" aria-label="Dismiss error">
+        ×
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onActivated } from 'vue';
+import { ref, nextTick, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { chatsAPI } from '../services/api';
 
 const currentChat = ref(null);
@@ -140,6 +188,7 @@ const error = ref('');
 const messagesContainer = ref(null);
 const textarea = ref(null);
 const filterRecentOnly = ref(false);
+const showMenu = ref(false);
 
 async function createChat() {
   loading.value = true;
@@ -256,6 +305,41 @@ function startNewChat() {
   messages.value = [];
   messageInput.value = '';
   error.value = '';
+  showMenu.value = false;
+}
+
+async function clearConversation() {
+  if (!confirm('Clear all messages from this conversation?')) {
+    return;
+  }
+
+  showMenu.value = false;
+  error.value = '';
+
+  try {
+    await chatsAPI.clear(currentChat.value.id);
+    messages.value = [];
+  } catch (err) {
+    error.value = 'Failed to clear conversation. Please try again.';
+    console.error('Error clearing conversation:', err);
+  }
+}
+
+async function deleteConversation() {
+  if (!confirm('Delete this conversation permanently? This cannot be undone.')) {
+    return;
+  }
+
+  showMenu.value = false;
+  error.value = '';
+
+  try {
+    await chatsAPI.delete(currentChat.value.id);
+    startNewChat();
+  } catch (err) {
+    error.value = 'Failed to delete conversation. Please try again.';
+    console.error('Error deleting conversation:', err);
+  }
 }
 
 function scrollToBottom() {
@@ -315,8 +399,44 @@ function getCitationLink(citation) {
   return { path, query };
 }
 
+function hasEmptyContext(message) {
+  return message.metadata &&
+         message.metadata.empty_context &&
+         message.metadata.empty_context.type;
+}
+
+function getEmptyContextType(message) {
+  return message.metadata?.empty_context?.type || null;
+}
+
+function getEmptyContextTitle(message) {
+  const type = getEmptyContextType(message);
+  const titles = {
+    no_documents: 'No Documents Found',
+    no_recent_documents: 'No Recent Documents Found',
+    no_relevant_chunks: 'No Relevant Information Found'
+  };
+  return titles[type] || 'No Results';
+}
+
 watch(messages, () => {
   scrollToBottom();
+});
+
+// Close dropdown when clicking outside
+function handleClickOutside(event) {
+  const dropdown = event.target.closest('.dropdown');
+  if (!dropdown && showMenu.value) {
+    showMenu.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 
 // Scroll to bottom when returning from document detail view
@@ -354,6 +474,12 @@ onActivated(() => {
   color: #2d3748;
 }
 
+.chat-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .new-chat-btn {
   display: flex;
   align-items: center;
@@ -374,6 +500,79 @@ onActivated(() => {
 }
 
 .new-chat-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: Arial, sans-serif;
+}
+
+.menu-btn:hover {
+  background-color: #edf2f7;
+  border-color: #cbd5e0;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 200px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+  border: none;
+  color: #2d3748;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f7fafc;
+}
+
+.dropdown-item.danger {
+  color: #c53030;
+}
+
+.dropdown-item.danger:hover {
+  background-color: #fff5f5;
+}
+
+.dropdown-item svg {
   width: 16px;
   height: 16px;
   stroke-width: 2;
@@ -721,6 +920,9 @@ textarea:disabled {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
+  font-size: 18px;
+  line-height: 1;
+  font-family: Arial, sans-serif;
 }
 
 .send-btn:hover:not(:disabled) {
@@ -732,24 +934,178 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
-.send-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2;
-}
-
 .input-hint {
   margin: 0.5rem 0 0 0;
   font-size: 0.75rem;
   color: #a0aec0;
 }
 
-.error-message {
+.error-banner {
   margin: 1rem 1.5rem;
   padding: 0.75rem 1rem;
   background-color: #fed7d7;
   color: #c53030;
   border-radius: 6px;
+  border-left: 4px solid #c53030;
   font-size: 0.875rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.error-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+.error-icon circle,
+.error-icon line {
+  stroke: #c53030;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.dismiss-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #c53030;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dismiss-btn:hover {
+  opacity: 1;
+  background-color: rgba(254, 215, 215, 0.5);
+  border-radius: 4px;
+}
+
+.empty-context-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.empty-context-box .info-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  margin-top: 2px;
+}
+
+.empty-context-content {
+  flex: 1;
+}
+
+.empty-context-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-context-description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.empty-context-action {
+  font-size: 0.8125rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Variant: No documents */
+.empty-context-no_documents {
+  background-color: #fff5f5;
+  border-color: #feb2b2;
+}
+
+.empty-context-no_documents .info-icon {
+  color: #c53030;
+}
+
+.empty-context-no_documents .empty-context-title {
+  color: #742a2a;
+}
+
+.empty-context-no_documents .empty-context-description {
+  color: #9b2c2c;
+}
+
+/* Variant: No recent documents */
+.empty-context-no_recent_documents {
+  background-color: #fefcbf;
+  border-color: #f6e05e;
+}
+
+.empty-context-no_recent_documents .info-icon {
+  color: #d69e2e;
+}
+
+.empty-context-no_recent_documents .empty-context-title {
+  color: #744210;
+}
+
+.empty-context-no_recent_documents .empty-context-description {
+  color: #975a16;
+}
+
+.empty-context-no_recent_documents .empty-context-action {
+  color: #744210;
+}
+
+/* Variant: No relevant chunks */
+.empty-context-no_relevant_chunks {
+  background-color: #e6fffa;
+  border-color: #81e6d9;
+}
+
+.empty-context-no_relevant_chunks .info-icon {
+  color: #319795;
+}
+
+.empty-context-no_relevant_chunks .empty-context-title {
+  color: #234e52;
+}
+
+.empty-context-no_relevant_chunks .empty-context-description {
+  color: #2c7a7b;
 }
 </style>

@@ -1,5 +1,5 @@
 class ChatsController < ApplicationController
-  before_action :set_chat, only: [:show]
+  before_action :set_chat, only: [:show, :clear, :destroy]
 
   def index
     @chats = Chat.order(created_at: :desc)
@@ -54,6 +54,28 @@ class ChatsController < ApplicationController
           end
         }
       end
+    end
+  end
+
+  # DELETE /chats/:id/clear
+  # Clear all messages from a chat (keeps the chat itself)
+  def clear
+    @chat.messages.destroy_all
+
+    respond_to do |format|
+      format.html { redirect_to @chat, notice: 'Conversation cleared.' }
+      format.json { render json: { message: 'Conversation cleared' }, status: :ok }
+    end
+  end
+
+  # DELETE /chats/:id
+  # Delete the entire chat and all its messages
+  def destroy
+    @chat.destroy
+
+    respond_to do |format|
+      format.html { redirect_to root_path, notice: 'Chat deleted.' }
+      format.json { head :no_content }
     end
   end
 

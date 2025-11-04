@@ -65,6 +65,16 @@ export const chatsAPI = {
     }
 
     return api.post(`/chats/${chatId}/messages`, payload);
+  },
+
+  // Clear all messages from a chat
+  clear(chatId) {
+    return api.delete(`/chats/${chatId}/clear`);
+  },
+
+  // Delete a chat entirely
+  delete(chatId) {
+    return api.delete(`/chats/${chatId}`);
   }
 };
 
