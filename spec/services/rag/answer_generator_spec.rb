@@ -157,28 +157,109 @@ RSpec.describe Rag::AnswerGenerator do
         allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
       end
 
-      it "returns default message without calling LLM" do
-        result = described_class.generate(question)
+      context "when no documents exist" do
+        before do
+          # No completed documents in the system
+          completed_scope = double("ActiveRecord::Relation")
+          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
+          allow(completed_scope).to receive(:count).and_return(0)
+        end
 
-        expect(result[:answer]).to eq("I don't have enough information in the provided documents to answer your question.")
+        it "returns no_documents context" do
+          result = described_class.generate(question)
+
+          expect(result[:empty_context][:type]).to eq(:no_documents)
+        end
+
+        it "returns appropriate message" do
+          result = described_class.generate(question)
+
+          expect(result[:answer]).to eq("No documents have been uploaded yet. Please upload some documents to get started.")
+        end
+
+        it "has empty citations" do
+          result = described_class.generate(question)
+
+          expect(result[:citations]).to eq([])
+        end
+
+        it "does not call LLM" do
+          expect(RubyLLM).not_to receive(:chat)
+
+          described_class.generate(question)
+        end
       end
 
-      it "has empty citations" do
-        result = described_class.generate(question)
+      context "when date filter eliminates all documents" do
+        let(:created_after) { 7.days.ago }
 
-        expect(result[:citations]).to eq([])
+        before do
+          # 5 total completed documents exist
+          # First call: Document.where(status: :completed).count returns 5
+          # Second call: Document.where(status: :completed).where("created_at >= ?", created_after).count returns 0
+          completed_scope = double("ActiveRecord::Relation")
+          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
+          allow(completed_scope).to receive(:count).and_return(5)
+          allow(completed_scope).to receive(:where).with(kind_of(String), kind_of(Time)).and_return(double(count: 0))
+        end
+
+        it "returns no_recent_documents context" do
+          result = described_class.generate(question, created_after: created_after)
+
+          expect(result[:empty_context][:type]).to eq(:no_recent_documents)
+          expect(result[:empty_context][:total_documents]).to eq(5)
+        end
+
+        it "returns appropriate message" do
+          result = described_class.generate(question, created_after: created_after)
+
+          expect(result[:answer]).to eq("No documents found in the selected date range. Try expanding your search to include older documents.")
+        end
+
+        it "has empty citations" do
+          result = described_class.generate(question, created_after: created_after)
+
+          expect(result[:citations]).to eq([])
+        end
+
+        it "does not call LLM" do
+          expect(RubyLLM).not_to receive(:chat)
+
+          described_class.generate(question, created_after: created_after)
+        end
       end
 
-      it "does not call PromptBuilder" do
-        expect(Rag::PromptBuilder).not_to receive(:build)
+      context "when documents exist but no relevant chunks" do
+        before do
+          # 5 completed documents exist
+          completed_scope = double("ActiveRecord::Relation")
+          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
+          allow(completed_scope).to receive(:count).and_return(5)
+        end
 
-        described_class.generate(question)
-      end
+        it "returns no_relevant_chunks context" do
+          result = described_class.generate(question)
 
-      it "does not call LLM" do
-        expect(RubyLLM).not_to receive(:chat)
+          expect(result[:empty_context][:type]).to eq(:no_relevant_chunks)
+        end
 
-        described_class.generate(question)
+        it "returns default message" do
+          result = described_class.generate(question)
+
+          expect(result[:answer]).to eq("I don't have enough information in the provided documents to answer your question.")
+        end
+
+        it "has empty citations" do
+          result = described_class.generate(question)
+
+          expect(result[:citations]).to eq([])
+        end
+
+        it "does not call LLM" do
+          expect(RubyLLM).not_to receive(:chat)
+
+          described_class.generate(question)
+        end
       end
     end
 

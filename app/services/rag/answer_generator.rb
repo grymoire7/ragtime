@@ -38,12 +38,14 @@ module Rag
 
       chunks_data = ChunkRetriever.retrieve(question, **retrieval_options)
 
-      # Step 2: If no chunks found, return default message without calling LLM
+      # Step 2: If no chunks found, determine why and return contextual message
       if chunks_data.empty?
+        empty_context = determine_empty_context(created_after)
         return {
-          answer: "I don't have enough information in the provided documents to answer your question.",
+          answer: generate_empty_message(empty_context),
           citations: [],
-          model: model
+          model: model,
+          empty_context: empty_context
         }
       end
 
@@ -77,6 +79,39 @@ module Rag
     end
 
     private
+
+    def determine_empty_context(created_after)
+      # Check if there are any documents at all
+      total_documents = Document.where(status: :completed).count
+
+      if total_documents == 0
+        return { type: :no_documents }
+      end
+
+      # If date filter is applied, check if any documents match the filter
+      if created_after.present?
+        recent_documents = Document.where(status: :completed).where("created_at >= ?", created_after).count
+        if recent_documents == 0
+          return { type: :no_recent_documents, total_documents: total_documents }
+        end
+      end
+
+      # Documents exist (and match date filter if applied), but no relevant chunks
+      { type: :no_relevant_chunks }
+    end
+
+    def generate_empty_message(empty_context)
+      case empty_context[:type]
+      when :no_documents
+        "No documents have been uploaded yet. Please upload some documents to get started."
+      when :no_recent_documents
+        "No documents found in the selected date range. Try expanding your search to include older documents."
+      when :no_relevant_chunks
+        "I don't have enough information in the provided documents to answer your question."
+      else
+        "I don't have enough information in the provided documents to answer your question."
+      end
+    end
 
     def filter_and_renumber_citations(answer, all_citations)
       # Parse the answer for citation references like [1], [2], [3], etc.

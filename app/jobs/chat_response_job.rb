@@ -13,12 +13,14 @@ class ChatResponseJob < ApplicationJob
     )
 
     # Create the assistant message with the RAG-generated answer and citations
+    # Include empty_context if present to help frontend display appropriate messages
+    metadata = { citations: result[:citations] }
+    metadata[:empty_context] = result[:empty_context] if result[:empty_context].present?
+
     assistant_message = chat.messages.create!(
       role: 'assistant',
       content: result[:answer],
-      metadata: {
-        citations: result[:citations]
-      }
+      metadata: metadata
     )
 
     # Broadcast the messages for Turbo Streams (HTML interface)
