@@ -47,6 +47,19 @@ RSpec.describe "Documents", type: :request do
       expect(doc_json).to have_key("status")
       expect(doc_json).to have_key("created_at")
       expect(doc_json).to have_key("chunk_count")
+      expect(doc_json).to have_key("error_message")
+    end
+
+    it "includes error_message for failed documents" do
+      failed_doc = create(:document, status: :failed, error_message: "Processing failed")
+
+      get documents_path
+
+      json = JSON.parse(response.body)
+      doc_json = json.first
+
+      expect(doc_json["status"]).to eq("failed")
+      expect(doc_json["error_message"]).to eq("Processing failed")
     end
 
     it "includes chunk count" do
@@ -91,6 +104,16 @@ RSpec.describe "Documents", type: :request do
       expect(chunk_json).to have_key("content")
       expect(chunk_json).to have_key("position")
       expect(chunk_json).to have_key("token_count")
+    end
+
+    it "includes error_message in response" do
+      failed_doc = create(:document, status: :failed, error_message: "Extraction failed")
+
+      get document_path(failed_doc)
+
+      json = JSON.parse(response.body)
+      expect(json).to have_key("error_message")
+      expect(json["error_message"]).to eq("Extraction failed")
     end
 
     it "orders chunks by position" do

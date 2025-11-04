@@ -6,7 +6,7 @@ class DocumentsController < ApplicationController
   def index
     @documents = Document.order(created_at: :desc)
     render json: @documents.as_json(
-      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at],
+      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message],
       methods: [:supported_format?],
       include: {
         chunks: { only: [:id] }
@@ -20,7 +20,7 @@ class DocumentsController < ApplicationController
   # Show a single document with its chunks
   def show
     render json: @document.as_json(
-      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at],
+      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message],
       methods: [:supported_format?],
       include: {
         chunks: {
@@ -58,7 +58,7 @@ class DocumentsController < ApplicationController
       ProcessDocumentJob.perform_later(@document.id)
 
       render json: @document.as_json(
-        only: [:id, :title, :filename, :content_type, :file_size, :status, :created_at]
+        only: [:id, :title, :filename, :content_type, :file_size, :status, :created_at, :error_message]
       ), status: :created
     else
       render json: { errors: @document.errors.full_messages }, status: :unprocessable_content

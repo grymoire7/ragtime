@@ -98,13 +98,14 @@ RSpec.describe ProcessDocumentJob, type: :job do
         allow(DocumentProcessing::TextExtractor).to receive(:extract).and_return("")
       end
 
-      it "marks document as failed" do
+      it "marks document as failed with error message" do
         expect {
           described_class.new.perform(document.id)
         }.to raise_error(ProcessDocumentJob::ProcessingError)
 
         document.reload
         expect(document.status).to eq("failed")
+        expect(document.error_message).to eq("No text could be extracted from document")
       end
 
       it "logs error" do
@@ -122,13 +123,14 @@ RSpec.describe ProcessDocumentJob, type: :job do
         allow(DocumentProcessing::TextChunker).to receive(:chunk).and_return([])
       end
 
-      it "marks document as failed" do
+      it "marks document as failed with error message" do
         expect {
           described_class.new.perform(document.id)
         }.to raise_error(ProcessDocumentJob::ProcessingError)
 
         document.reload
         expect(document.status).to eq("failed")
+        expect(document.error_message).to eq("No chunks could be created from extracted text")
       end
     end
 
@@ -138,13 +140,14 @@ RSpec.describe ProcessDocumentJob, type: :job do
           .and_raise(DocumentProcessing::TextExtractor::ExtractionError.new("Extraction failed"))
       end
 
-      it "marks document as failed" do
+      it "marks document as failed with extraction error message" do
         expect {
           described_class.new.perform(document.id)
         }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError)
 
         document.reload
         expect(document.status).to eq("failed")
+        expect(document.error_message).to eq("Unable to extract text from document. The file may be corrupted or in an unsupported format.")
       end
 
       it "logs the error" do
@@ -169,15 +172,18 @@ RSpec.describe ProcessDocumentJob, type: :job do
           .and_raise(DocumentProcessing::EmbeddingGenerator::EmbeddingError.new("API error"))
       end
 
-      it "marks document as failed" do
+      it "marks document as failed with generic error message" do
         expect {
           described_class.new.perform(document.id)
         }.to raise_error(DocumentProcessing::EmbeddingGenerator::EmbeddingError)
 
         document.reload
         expect(document.status).to eq("failed")
+        expect(document.error_message).to include("An unexpected error occurred")
+        expect(document.error_message).to include("EmbeddingError")
       end
     end
+
 
     context "when document does not exist" do
       it "raises ActiveRecord::RecordNotFound" do

@@ -43,7 +43,7 @@ FOREIGN KEY ("blob_id")
   REFERENCES "active_storage_blobs" ("id")
 );
 CREATE UNIQUE INDEX "index_active_storage_variant_records_uniqueness" ON "active_storage_variant_records" ("blob_id", "variation_digest");
-CREATE TABLE IF NOT EXISTS "documents" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "title" varchar, "filename" varchar, "content_type" varchar, "file_size" integer, "status" varchar, "processed_at" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE TABLE IF NOT EXISTS "documents" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "title" varchar, "filename" varchar, "content_type" varchar, "file_size" integer, "status" varchar, "processed_at" datetime(6), "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "error_message" text);
 CREATE INDEX "index_documents_on_status" ON "documents" ("status");
 CREATE INDEX "index_documents_on_created_at" ON "documents" ("created_at");
 CREATE TABLE IF NOT EXISTS "chunks" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "document_id" integer NOT NULL, "content" text, "position" integer, "token_count" integer, "embedding" blob, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, CONSTRAINT "fk_rails_1dac2f17d2"
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS "vec_chunks_chunks"(chunk_id INTEGER PRIMARY KEY AUTO
 CREATE TABLE IF NOT EXISTS "vec_chunks_rowids"(rowid INTEGER PRIMARY KEY AUTOINCREMENT,id,chunk_id INTEGER,chunk_offset INTEGER);
 CREATE TABLE IF NOT EXISTS "vec_chunks_vector_chunks00"(rowid PRIMARY KEY,vectors BLOB NOT NULL);
 INSERT INTO "schema_migrations" (version) VALUES
+('20251104164359'),
 ('20251102221021'),
 ('20251029214244'),
 ('20251029205413'),

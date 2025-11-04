@@ -46,8 +46,21 @@ class ProcessDocumentJob < ApplicationJob
 
       Rails.logger.info "Successfully processed document #{document.id}: #{document.chunks.count} chunks created"
     rescue => e
-      # Mark document as failed and log the error
-      document.update!(status: :failed)
+      # Mark document as failed with error message and log the error
+      error_message = case e
+      when ProcessingError
+        e.message
+      when DocumentProcessing::TextExtractor::ExtractionError
+        "Unable to extract text from document. The file may be corrupted or in an unsupported format."
+      else
+        "An unexpected error occurred while processing the document: #{e.class.name}"
+      end
+
+      document.update!(
+        status: :failed,
+        error_message: error_message
+      )
+
       Rails.logger.error "Failed to process document #{document.id}: #{e.class} - #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
