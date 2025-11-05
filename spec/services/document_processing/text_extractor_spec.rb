@@ -115,6 +115,23 @@ RSpec.describe DocumentProcessing::TextExtractor do
           }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError, /Error reading text file/)
         end
       end
+
+      context "when text file has encoding issues" do
+        it "cleans invalid UTF-8 sequences and continues" do
+          document = create(:document, :text_file)
+          document.file.attach(
+            io: StringIO.new("Valid text\xFF\xFE Invalid bytes"),
+            filename: "test.txt",
+            content_type: "text/plain"
+          )
+          extractor = described_class.new(document)
+
+          result = extractor.extract
+          expect(result).to include("Valid text")
+          expect(result).to include("�") # Should contain replacement character
+          expect(result).to be_valid_encoding
+        end
+      end
     end
 
     context "with DOCX document" do
@@ -153,6 +170,67 @@ RSpec.describe DocumentProcessing::TextExtractor do
         end
       end
     end
+
+    context "with markdown document" do
+      it "extracts text from markdown file" do
+        # Create document with markdown content
+        document = create(:document, content_type: "text/markdown")
+        document.file.attach(
+          io: StringIO.new("# Heading\n\nSome **bold** text and a [link](http://example.com)."),
+          filename: "test.md",
+          content_type: "text/markdown"
+        )
+        extractor = described_class.new(document)
+
+        result = extractor.extract
+        expect(result).to eq("# Heading\n\nSome **bold** text and a [link](http://example.com).")
+      end
+
+      it "strips whitespace from result" do
+        # Create document with whitespace content
+        document = create(:document, content_type: "text/markdown")
+        document.file.attach(
+          io: StringIO.new("  Markdown content with spaces  "),
+          filename: "test.md",
+          content_type: "text/markdown"
+        )
+        extractor = described_class.new(document)
+
+        result = extractor.extract
+        expect(result).to eq("Markdown content with spaces")
+      end
+
+      context "when markdown file reading fails" do
+        it "raises ExtractionError" do
+          document = create(:document, content_type: "text/markdown")
+          extractor = described_class.new(document)
+
+          # Stub file.read to raise an error within the open block
+          allow_any_instance_of(Tempfile).to receive(:read).and_raise(StandardError.new("File error"))
+
+          expect {
+            extractor.extract
+          }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError, /Error reading markdown file/)
+        end
+      end
+
+      context "when markdown file has encoding issues" do
+        it "cleans invalid UTF-8 sequences and continues" do
+          document = create(:document, content_type: "text/markdown")
+          document.file.attach(
+            io: StringIO.new("Valid text\xFF\xFE Invalid bytes"),
+            filename: "test.md",
+            content_type: "text/markdown"
+          )
+          extractor = described_class.new(document)
+
+          result = extractor.extract
+          expect(result).to include("Valid text")
+          expect(result).to include("�") # Should contain replacement character
+          expect(result).to be_valid_encoding
+        end
+      end
+    end
   end
 
   describe "supported formats" do
@@ -170,6 +248,12 @@ RSpec.describe DocumentProcessing::TextExtractor do
 
     it "supports DOCX" do
       document = build(:document, content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+      extractor = described_class.new(document)
+      expect { extractor.extract }.not_to raise_error(DocumentProcessing::TextExtractor::UnsupportedFormatError)
+    end
+
+    it "supports markdown" do
+      document = build(:document, content_type: "text/markdown")
       extractor = described_class.new(document)
       expect { extractor.extract }.not_to raise_error(DocumentProcessing::TextExtractor::UnsupportedFormatError)
     end

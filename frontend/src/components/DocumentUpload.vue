@@ -22,12 +22,12 @@
           <input
             id="file-input"
             type="file"
-            accept=".pdf,.txt,.docx"
+            accept=".pdf,.txt,.docx,.md"
             @change="handleFileSelect"
             hidden
           >
         </label>
-        <p class="supported-formats">Supported: PDF, TXT, DOCX</p>
+        <p class="supported-formats">Supported: PDF, TXT, DOCX, MD</p>
       </div>
 
       <div v-else class="uploading-content">
@@ -71,6 +71,7 @@ const successMessage = ref('');
 const SUPPORTED_TYPES = [
   'application/pdf',
   'text/plain',
+  'text/markdown',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ];
 
@@ -95,7 +96,7 @@ async function uploadFile(file) {
 
   // Validate file type
   if (!SUPPORTED_TYPES.includes(file.type)) {
-    error.value = 'Unsupported file format. Please upload PDF, TXT, or DOCX files.';
+    error.value = 'Unsupported file format. Please upload PDF, TXT, DOCX, or MD files.';
     return;
   }
 

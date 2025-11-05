@@ -23,6 +23,8 @@ module DocumentProcessing
         extract_from_pdf
       when "text/plain"
         extract_from_text
+      when "text/markdown"
+        extract_from_markdown
       when "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         extract_from_docx
       else
@@ -49,10 +51,26 @@ module DocumentProcessing
 
     def extract_from_text
       @document.file.open do |file|
-        file.read
+        file.set_encoding("UTF-8")
+        text = file.read
+        validate_utf8(text)
       end
+    rescue EncodingError => e
+      raise ExtractionError, "Text file contains invalid UTF-8 encoding: #{e.message}"
     rescue => e
       raise ExtractionError, "Error reading text file: #{e.message}"
+    end
+
+    def extract_from_markdown
+      @document.file.open do |file|
+        file.set_encoding("UTF-8")
+        text = file.read
+        validate_utf8(text)
+      end
+    rescue EncodingError => e
+      raise ExtractionError, "Markdown file contains invalid UTF-8 encoding: #{e.message}"
+    rescue => e
+      raise ExtractionError, "Error reading markdown file: #{e.message}"
     end
 
     def extract_from_docx
@@ -64,6 +82,20 @@ module DocumentProcessing
       end
     rescue => e
       raise ExtractionError, "Error extracting text from DOCX: #{e.message}"
+    end
+
+    # Validate that text contains valid UTF-8 encoding
+    def validate_utf8(text)
+      # Check if text has valid UTF-8 encoding
+      unless text.valid_encoding?
+        # Use scrub to clean up invalid UTF-8 sequences
+        text = text.scrub("�") # Replace invalid chars with replacement character
+        # If still invalid, raise an error
+        unless text.valid_encoding?
+          raise EncodingError, "File contains invalid UTF-8 byte sequences that cannot be cleaned"
+        end
+      end
+      text
     end
 
     class UnsupportedFormatError < StandardError; end

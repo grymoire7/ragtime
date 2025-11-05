@@ -18,6 +18,7 @@ class Document < ApplicationRecord
   SUPPORTED_CONTENT_TYPES = [
     "application/pdf",
     "text/plain",
+    "text/markdown",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ].freeze
 
@@ -35,5 +36,9 @@ class Document < ApplicationRecord
 
   def docx?
     content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  end
+
+  def markdown?
+    content_type == "text/markdown"
   end
 end

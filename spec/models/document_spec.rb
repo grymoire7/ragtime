@@ -89,6 +89,11 @@ RSpec.describe Document, type: :model do
       expect(document.supported_format?).to be true
     end
 
+    it "returns true for markdown" do
+      document = build(:document, content_type: "text/markdown")
+      expect(document.supported_format?).to be true
+    end
+
     it "returns false for unsupported formats" do
       document = build(:document, content_type: "image/png")
       expect(document.supported_format?).to be false
@@ -128,6 +133,18 @@ RSpec.describe Document, type: :model do
     it "returns false for non-DOCX documents" do
       document = build(:document, content_type: "application/pdf")
       expect(document.docx?).to be false
+    end
+  end
+
+  describe "#markdown?" do
+    it "returns true for markdown documents" do
+      document = build(:document, content_type: "text/markdown")
+      expect(document.markdown?).to be true
+    end
+
+    it "returns false for non-markdown documents" do
+      document = build(:document, content_type: "application/pdf")
+      expect(document.markdown?).to be false
     end
   end
 
@@ -178,6 +195,10 @@ RSpec.describe Document, type: :model do
       expect(Document::SUPPORTED_CONTENT_TYPES).to include(
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       )
+    end
+
+    it "includes markdown" do
+      expect(Document::SUPPORTED_CONTENT_TYPES).to include("text/markdown")
     end
   end
 end
