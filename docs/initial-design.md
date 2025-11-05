@@ -93,16 +93,21 @@ finish early, streaming is a great polish feature.
 - ⏭️ Consider: Document preview modal from citations (deferred to Phase 9)
 - ⏭️ Consider: Citation tooltips showing chunk content on hover (deferred to Phase 9)
 
-**Phase 6: Polish and error handling**
-- Handle edge cases (empty documents, unsupported formats)
-- Add proper error messages throughout UI
-- Implement conversation clearing/management
-- Add document deletion functionality
-- Improve loading states and user feedback
-- Add basic authentication (Devise or simple token auth)
+**Phase 6: Polish and error handling** ✅ COMPLETE
+- ✅ Handle edge cases (empty documents, unsupported formats)
+- ✅ Add proper error messages throughout UI
+- ✅ Implement conversation clearing/management
+- ✅ Add document deletion functionality (completed in Phase 5)
+- ✅ Improve loading states and user feedback
+- ✅ Add basic authentication (session-based shared password gate)
+  - Shared password stored in Rails credentials (provided to recruiters)
+  - Professional login page with gradient design
+  - Session-based auth with Vue router guards
+  - Prevents AI API abuse while allowing recruiter access
+  - Comprehensive test coverage (13 auth specs)
 
 **Phase 7: Testing and refinement** 🔄 IN PROGRESS
-- ✅ Core regression tests implemented (41 backend specs, 20 frontend specs)
+- ✅ Core regression tests implemented (222 total specs passing)
   - Document model tests for chunk ordering (guards against display bugs)
   - DocumentDetailView tests for chunk highlighting and visibility
   - ChatInterface tests for citation formatting
