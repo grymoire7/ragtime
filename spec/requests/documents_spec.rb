@@ -4,6 +4,7 @@ RSpec.describe "Documents", type: :request do
   # Explicitly clean up documents before each test to avoid persisting data
   before(:each) do
     Document.destroy_all
+    authenticate_request
   end
 
   describe "GET /documents" do

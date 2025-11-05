@@ -4,6 +4,7 @@ RSpec.describe "Messages", type: :request do
   before(:each) do
     Chat.destroy_all
     Model.destroy_all
+    authenticate_request
   end
 
   let!(:gemma_model) { create(:model, :gemma3) }
