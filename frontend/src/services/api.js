@@ -5,8 +5,24 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  withCredentials: true  // Send cookies with requests for session authentication
 });
+
+// Response interceptor to handle 401 errors globally
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      // Redirect to login on unauthorized access
+      // Check if we're not already on the login page to avoid loops
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const documentsAPI = {
   // Get all documents
@@ -82,6 +98,23 @@ export const modelsAPI = {
   // Get available models
   getAll() {
     return api.get('/models');
+  }
+};
+
+export const authAPI = {
+  // Login with password
+  login(password) {
+    return api.post('/auth/login', { password });
+  },
+
+  // Logout
+  logout() {
+    return api.delete('/auth/logout');
+  },
+
+  // Check authentication status
+  checkStatus() {
+    return api.get('/auth/status');
   }
 };
 
