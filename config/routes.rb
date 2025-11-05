@@ -1,4 +1,9 @@
 Rails.application.routes.draw do
+  # Authentication endpoints
+  post "auth/login", to: "sessions#create"
+  delete "auth/logout", to: "sessions#destroy"
+  get "auth/status", to: "sessions#status"
+
   resources :documents, only: [:index, :show, :create, :destroy]
 
   resources :chats do
