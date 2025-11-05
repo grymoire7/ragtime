@@ -46,9 +46,10 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { authAPI } from '../services/api';
+import { useAuth } from '../composables/useAuth';
 
 const router = useRouter();
+const { login } = useAuth();
 const password = ref('');
 const loading = ref(false);
 const error = ref('');
@@ -60,7 +61,7 @@ async function handleLogin() {
   error.value = '';
 
   try {
-    await authAPI.login(password.value);
+    await login(password.value);
     // Redirect to home page on successful login
     router.push('/');
   } catch (err) {

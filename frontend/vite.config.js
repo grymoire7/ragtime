@@ -8,6 +8,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // Proxy API requests to Rails backend
+      '/auth': 'http://localhost:3000',
       '/documents': 'http://localhost:3000',
       '/chats': 'http://localhost:3000',
       '/messages': 'http://localhost:3000',

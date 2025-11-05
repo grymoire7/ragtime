@@ -11,6 +11,14 @@
           </h1>
           <p class="subtitle">Document Q&A System</p>
         </router-link>
+        <button v-if="isAuthenticated && $route.name !== 'login'" @click="handleLogout" class="logout-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
       </div>
     </header>
 
@@ -29,7 +37,20 @@
 </template>
 
 <script setup>
-// Router view handles component loading
+import { useRouter } from 'vue-router';
+import { useAuth } from './composables/useAuth';
+
+const router = useRouter();
+const { isAuthenticated, logout } = useAuth();
+
+async function handleLogout() {
+  try {
+    await logout();
+    router.push('/login');
+  } catch (err) {
+    console.error('Error logging out:', err);
+  }
+}
 </script>
 
 <style>
@@ -65,6 +86,9 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header-link {
@@ -77,6 +101,34 @@ body {
 .header-link:hover {
   opacity: 0.9;
   cursor: pointer;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.logout-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
 }
 
 .header-content h1 {

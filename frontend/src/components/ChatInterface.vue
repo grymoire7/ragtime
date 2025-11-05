@@ -30,15 +30,6 @@
               </svg>
               Delete conversation
             </button>
-            <div class="dropdown-divider"></div>
-            <button @click="handleLogout" class="dropdown-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              Logout
-            </button>
           </div>
         </div>
       </div>
@@ -188,10 +179,7 @@
 import { ref, nextTick, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { chatsAPI } from '../services/api';
-import { useAuth } from '../composables/useAuth';
-
 const router = useRouter();
-const { logout } = useAuth();
 
 const currentChat = ref(null);
 const messages = ref([]);
@@ -356,17 +344,6 @@ async function deleteConversation() {
   }
 }
 
-async function handleLogout() {
-  showMenu.value = false;
-
-  try {
-    await logout();
-    router.push('/login');
-  } catch (err) {
-    error.value = 'Failed to logout. Please try again.';
-    console.error('Error logging out:', err);
-  }
-}
 
 function scrollToBottom() {
   nextTick(() => {
