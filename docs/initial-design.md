@@ -111,14 +111,25 @@ finish early, streaming is a great polish feature.
   - Document model tests for chunk ordering (guards against display bugs)
   - DocumentDetailView tests for chunk highlighting and visibility
   - ChatInterface tests for citation formatting
+  - Authentication flow tests (login, logout, session management)
+  - Bug fixes: auth proxy routing, login redirect, UI visibility issues
+- ✅ Prompt quality validation
+  - RAG prompt includes strict citation guidelines
+  - Clear instructions to avoid hallucination and irrelevant citations
+  - Relevance scoring displayed to users (0-1 scale)
+- 🔄 Manual testing and quality validation (Option A)
+  - Upload and test various document types (PDF, TXT, DOCX)
+  - Verify RAG pipeline produces accurate, cited answers
+  - Test edge cases: empty documents, large documents, special characters
+  - Validate citation links navigate correctly to source documents
+  - Test date filtering functionality with multiple documents
+  - Cross-browser validation (Chrome, Firefox, Safari)
 - 🔄 Deferred for future (see Testing Strategy section below)
   - Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
   - E2E tests with Capybara or Playwright for user workflows
   - RAG quality metrics and optional VCR-based LLM regression tests
   - Performance tests for vector search at scale
-  - Cross-browser testing for Vue.js frontend
-- Refine prompts for better answer quality (ongoing)
-- Test with various document types and sizes (manual testing)
+  - Automated cross-browser testing
 
 **Phase 8: Deployment and documentation**
 - Deploy to Fly.io or Render
