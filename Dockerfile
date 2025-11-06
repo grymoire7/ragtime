@@ -99,7 +99,13 @@ COPY --from=ruby-build /rails /rails
 COPY --from=frontend-build /app/frontend/dist ./public/frontend
 
 # Create directories for runtime files
-RUN mkdir -p db log storage tmp/pids tmp/cache tmp/sockets
+RUN mkdir -p db log tmp/pids tmp/cache tmp/sockets
+
+# Set up persistent storage for Fly.io volume
+# The volume will be mounted at /rails/storage by Fly.io
+# Ensure proper directory structure exists within the storage directory
+RUN mkdir -p /rails/storage && \
+    chown -R rails:rails /rails/storage
 
 # Set up Nginx configuration
 RUN rm -f /etc/nginx/sites-enabled/default && \
