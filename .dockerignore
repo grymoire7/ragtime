@@ -46,6 +46,30 @@
 # Ignore development files
 /.devcontainer
 
-# Ignore Docker-related files
+# Ignore Docker-related files (except main Dockerfile needed for Fly.io)
 /.dockerignore
-/Dockerfile*
+/Dockerfile.dev
+
+# Ignore Fly.io specific files (fly.toml is needed for deployment)
+/flyctl.toml
+
+# Ignore development and test artifacts
+/coverage/
+/spec/examples.txt
+/test/reports/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore documentation files (not needed for runtime)
+/docs/
+*.md
+!README.md
