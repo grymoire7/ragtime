@@ -1,0 +1,259 @@
+#!/usr/bin/env ruby
+require "fileutils"
+
+APP_ROOT = File.expand_path("..", __dir__)
+
+def system!(*args)
+  system(*args, exception: true)
+end
+
+def error!(message)
+  puts "❌ ERROR: #{message}"
+  exit 1
+end
+
+def success!(message)
+  puts "✅ #{message}"
+end
+
+def info!(message)
+  puts "ℹ️  #{message}"
+end
+
+def warning!(message)
+  puts "⚠️  #{message}"
+end
+
+# Colors for terminal output
+def green(text)
+  "\033[32m#{text}\033[0m"
+end
+
+def blue(text)
+  "\033[34m#{text}\033[0m"
+end
+
+def yellow(text)
+  "\033[33m#{text}\033[0m"
+end
+
+def red(text)
+  "\033[31m#{text}\033[0m"
+end
+
+# Check if Fly CLI is installed
+def check_fly_cli!
+  info!("Checking Fly CLI...")
+
+  unless system("which fly > /dev/null 2>&1")
+    error!("Fly CLI is not installed.\n" \
+           "Please install it first:\n" \
+           "  • macOS: brew install flyctl\n" \
+           "  • Linux: curl -L https://fly.io/install.sh | sh\n" \
+           "  • Or visit: https://fly.io/docs/getting-started/installing-flyctl/")
+  end
+
+  # Check if user is logged in
+  unless system("fly auth whoami > /dev/null 2>&1")
+    error!("You are not logged into Fly.io.\n" \
+           "Please run: fly auth login")
+  end
+
+  success!("Fly CLI is available and authenticated")
+end
+
+# Check production master key
+def check_production_master_key!
+  info!("Checking production credentials...")
+
+  production_key_file = File.join(APP_ROOT, "config", "credentials", "production.key")
+
+  unless File.exist?(production_key_file)
+    error!("Production master key not found: #{production_key_file}\n" \
+           "Please ensure your production credentials are set up correctly.")
+  end
+
+  master_key = File.read(production_key_file).strip
+  if master_key.empty?
+    error!("Production master key file is empty: #{production_key_file}")
+  end
+
+  success!("Production master key found")
+  master_key
+end
+
+# Set RAILS_MASTER_KEY on Fly.io
+def set_fly_secrets!(master_key)
+  info!("Setting RAILS_MASTER_KEY on Fly.io...")
+
+  FileUtils.chdir APP_ROOT do
+    # Set the secret on Fly.io
+    unless system("fly secrets set RAILS_MASTER_KEY='#{master_key}'", exception: false)
+      error!("Failed to set RAILS_MASTER_KEY on Fly.io")
+    end
+
+    success!("RAILS_MASTER_KEY set on Fly.io")
+  end
+end
+
+# Deploy to Fly.io
+def deploy_to_fly!
+  info!("Deploying application to Fly.io...")
+
+  FileUtils.chdir APP_ROOT do
+    # Run the deployment
+    unless system("fly deploy", exception: false)
+      error!("Deployment to Fly.io failed")
+    end
+
+    success!("Application deployed to Fly.io")
+  end
+end
+
+# Show deployment status
+def show_deployment_status!
+  info!("Checking deployment status...")
+
+  FileUtils.chdir APP_ROOT do
+    puts "\n" + blue("=" * 60)
+    puts blue("🚀 Deployment Status")
+    puts blue("=" * 60)
+
+    # Show app status
+    puts "\n📊 " + yellow("Application Status:")
+    system("fly status", exception: false)
+
+    # Show app URL
+    puts "\n🌐 " + yellow("Application URLs:")
+    system("fly apps list", exception: false)
+
+    puts "\n📝 " + yellow("Useful Commands:")
+    puts "  • View logs:     fly logs"
+    puts "  • Open browser:  fly open"
+    puts "  • SSH access:    fly ssh console"
+    puts "  • Deploy again:  fly deploy"
+    puts "  • Scale app:     fly scale count 1"
+
+    puts "\n" + blue("=" * 60)
+  end
+end
+
+# Optional: Run health check after deployment
+def run_health_check!
+  info!("Running health check...")
+
+  # Get the app URL
+  app_url = `fly apps list --json 2>/dev/null | grep -o '"hostname":"[^"]*"' | cut -d'"' -f4 | head -1`.strip
+
+  if app_url.empty?
+    warning!("Could not determine application URL for health check")
+    return
+  end
+
+  health_url = "https://#{app_url}/health"
+
+  puts "\n🏥 " + yellow("Health Check URL:") + " #{health_url}"
+
+  # Try to check health (with timeout)
+  if system("timeout 30 curl -f #{health_url} > /dev/null 2>&1", exception: false)
+    success!("Health check passed - application is responding")
+  else
+    warning!("Health check failed or timed out")
+    info!("The application may still be starting up. Check logs with: fly logs")
+  end
+end
+
+# Show next steps
+def show_next_steps!
+  puts "\n" + green("🎉 Deployment completed!")
+  puts "\n" + yellow("Next Steps:")
+  puts "1. Visit your application using: fly open"
+  puts "2. Check application logs: fly logs"
+  puts "3. Test the application functionality"
+  puts "4. Monitor performance with: fly monitor"
+
+  puts "\n" + yellow("Troubleshooting:")
+  puts "• If health checks fail, check logs: fly logs"
+  puts "• If you need to restart: fly restart"
+  puts "• If you need to rollback: fly deploy --rollback"
+  puts "• For more help: fly help"
+end
+
+# Parse command line arguments
+def parse_args
+  options = {
+    skip_health_check: false,
+    skip_secrets: false
+  }
+
+  ARGV.each do |arg|
+    case arg
+    when "--skip-health-check"
+      options[:skip_health_check] = true
+    when "--skip-secrets"
+      options[:skip_secrets] = true
+    when "--help", "-h"
+      show_help
+      exit 0
+    end
+  end
+
+  options
+end
+
+# Show help message
+def show_help
+  puts blue("🚀 Ragtime Fly.io Deployment Script")
+  puts blue("=====================================")
+  puts "\nUsage: script/deploy [options]"
+  puts "\nOptions:"
+  puts "  --skip-health-check  Skip post-deployment health check"
+  puts "  --skip-secrets       Skip setting RAILS_MASTER_KEY (use existing)"
+  puts "  --help, -h           Show this help message"
+  puts "\nThis script will:"
+  puts "1. Check Fly CLI installation and authentication"
+  puts "2. Verify production master key"
+  puts "3. Set RAILS_MASTER_KEY on Fly.io"
+  puts "4. Deploy the application"
+  puts "5. Show deployment status and next steps"
+end
+
+# Main execution
+def main
+  options = parse_args
+
+  puts blue("🚀 Ragtime Fly.io Deployment")
+  puts blue("=============================")
+
+  check_fly_cli!
+  master_key = check_production_master_key!
+
+  unless options[:skip_secrets]
+    set_fly_secrets!(master_key)
+  else
+    info!("Skipping RAILS_MASTER_KEY setup as requested")
+  end
+
+  deploy_to_fly!
+  show_deployment_status!
+
+  unless options[:skip_health_check]
+    run_health_check!
+  else
+    info!("Skipping health check as requested")
+  end
+
+  show_next_steps!
+end
+
+# Run the main function
+begin
+  main
+rescue Interrupt
+  puts "\n" + red("❌ Deployment cancelled by user")
+  exit 1
+rescue => e
+  puts "\n" + red("❌ Deployment failed with error:")
+  puts red(e.message)
+  exit 1
+end

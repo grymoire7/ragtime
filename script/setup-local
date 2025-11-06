@@ -1,0 +1,175 @@
+#!/usr/bin/env ruby
+require "fileutils"
+require "dotenv/load"
+
+APP_ROOT = File.expand_path("..", __dir__)
+
+def system!(*args)
+  system(*args, exception: true)
+end
+
+def error!(message)
+  puts "❌ ERROR: #{message}"
+  exit 1
+end
+
+def success!(message)
+  puts "✅ #{message}"
+end
+
+def info!(message)
+  puts "ℹ️  #{message}"
+end
+
+# Colors for terminal output
+def green(text)
+  "\033[32m#{text}\033[0m"
+end
+
+def blue(text)
+  "\033[34m#{text}\033[0m"
+end
+
+def yellow(text)
+  "\033[33m#{text}\033[0m"
+end
+
+def red(text)
+  "\033[31m#{text}\033[0m"
+end
+
+# Check if required commands are available
+def check_dependencies!
+  info!("Checking dependencies...")
+
+  unless system("which docker-compose > /dev/null 2>&1")
+    error!("Docker Compose is not installed. Please install Docker and Docker Compose first.")
+  end
+
+  unless system("which docker > /dev/null 2>&1")
+    error!("Docker is not installed. Please install Docker first.")
+  end
+
+  success!("Docker and Docker Compose are available")
+end
+
+# Check if RAILS_MASTER_KEY is set
+def check_rails_master_key!
+  master_key = ENV["RAILS_MASTER_KEY"]
+
+  if master_key.nil? || master_key.empty?
+    info!("RAILS_MASTER_KEY not found in environment")
+
+    # Try to read from production credentials file
+    production_key_file = File.join(APP_ROOT, "config", "credentials", "production.key")
+
+    if File.exist?(production_key_file)
+      master_key = File.read(production_key_file).strip
+      if master_key.empty?
+        error!("Production master key file is empty: #{production_key_file}")
+      end
+
+      info!("Using production master key from #{production_key_file}")
+      ENV["RAILS_MASTER_KEY"] = master_key
+    else
+      error!("RAILS_MASTER_KEY is not set and production.key file not found.\n" \
+             "Please either:\n" \
+             "  1. Set RAILS_MASTER_KEY in your .env file, or\n" \
+             "  2. Ensure config/credentials/production.key exists")
+    end
+  else
+    success!("RAILS_MASTER_KEY is set in environment")
+  end
+end
+
+# Build Docker image
+def build_docker_image!
+  info!("Building Docker image...")
+  FileUtils.chdir APP_ROOT do
+    unless system("docker-compose build", exception: false)
+      error!("Failed to build Docker image")
+    end
+    success!("Docker image built successfully")
+  end
+end
+
+# Start production environment
+def start_production_environment!
+  info!("Starting production environment...")
+  FileUtils.chdir APP_ROOT do
+    # Stop any existing containers
+    system("docker-compose --profile production down", exception: false)
+
+    # Start production containers
+    unless system("docker-compose --profile production up -d", exception: false)
+      error!("Failed to start production environment")
+    end
+
+    success!("Production environment started successfully")
+  end
+end
+
+# Wait for application to be healthy
+def wait_for_health_check!
+  info!("Waiting for application to be healthy...")
+
+  max_attempts = 30
+  attempt = 0
+
+  while attempt < max_attempts
+    if system("curl -f http://localhost/health > /dev/null 2>&1", exception: false)
+      success!("Application is healthy and ready")
+      return
+    end
+
+    print "." if attempt % 2 == 0
+    sleep 2
+    attempt += 1
+  end
+
+  puts
+  error!("Application did not become healthy within #{max_attempts * 2} seconds")
+end
+
+# Show application status and access information
+def show_access_info!
+  puts "\n" + blue("=" * 60)
+  puts blue("🚀 Ragtime is now running in production mode!")
+  puts blue("=" * 60)
+
+  puts "\n📍 " + green("Application URL:") + " http://localhost"
+  puts "📍 " + green("Health Check:") + " http://localhost/health"
+
+  puts "\n🔧 " + yellow("Management Commands:")
+  puts "  • View logs: docker-compose --profile production logs -f"
+  puts "  • Stop app:   docker-compose --profile production down"
+  puts "  • Restart:    docker-compose --profile production restart"
+
+  puts "\n🗄️  " + yellow("Data Persistence:")
+  puts "  • Database:  ragtime-production-db volume"
+  puts "  • Storage:   ragtime-production-storage volume"
+  puts "  • Logs:      ragtime-production-log volume"
+
+  puts "\n📝 " + yellow("Troubleshooting:")
+  puts "  • Check logs: docker-compose --profile production logs ragtime-prod"
+  puts "  • Access container: docker exec -it ragtime-prod bash"
+  puts "  • Rebuild image: docker-compose build --no-cache"
+
+  puts "\n" + blue("=" * 60)
+end
+
+# Main execution
+FileUtils.chdir APP_ROOT do
+  puts blue("🐳 Ragtime Local Production Setup")
+  puts blue("=====================================")
+
+  check_dependencies!
+  check_rails_master_key!
+  build_docker_image!
+  start_production_environment!
+  wait_for_health_check!
+  show_access_info!
+
+  puts "\n" + green("🎉 Setup completed successfully!")
+  puts "Your Ragtime application is now running in production mode locally."
+end
