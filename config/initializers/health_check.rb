@@ -1,0 +1,42 @@
+# Health check endpoint for container deployment
+# This initializer adds a simple health check endpoint that returns "OK"
+
+Rails.application.configure do
+  # Add health check route after routes are initialized
+  config.after_initialize do
+    Rails.application.routes.draw do
+      get 'health', to: lambda { |_env| [200, { 'Content-Type' => 'text/plain' }, ['OK']] }
+    end
+  end
+end
+
+# Verify sqlite-vec extension loads correctly in production
+begin
+  # Test sqlite-vec extension availability
+  require 'sqlite3'
+
+  # Create a temporary in-memory database to test the extension
+  db = SQLite3::Database.new(':memory:')
+
+  # Try to load the vec extension
+  db.enable_load_extension(true)
+  db.load_extension('vec')
+  db.enable_load_extension(false)
+
+  Rails.logger.info "sqlite-vec extension loaded successfully" if defined?(Rails.logger)
+rescue LoadError => e
+  Rails.logger.error "Failed to load sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
+  # In production, we want to fail fast if the extension isn't available
+  if Rails.env.production?
+    Rails.logger.error "CRITICAL: sqlite-vec extension is required in production. Exiting."
+    exit 1
+  end
+rescue => e
+  Rails.logger.error "Error verifying sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
+  if Rails.env.production?
+    Rails.logger.error "CRITICAL: Unable to verify sqlite-vec extension. Exiting."
+    exit 1
+  end
+ensure
+  db&.close
+end

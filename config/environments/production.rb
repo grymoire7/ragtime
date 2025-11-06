@@ -18,6 +18,10 @@ Rails.application.configure do
   # Cache assets for far-future expiry since they are all digest stamped.
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 
+  # In container deployment, Rails should not serve static files - Nginx will handle this
+  # But keep the file server enabled for health checks and basic functionality
+  config.public_file_server.enabled = true
+
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
@@ -30,18 +34,26 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true
 
-  # Skip http-to-https redirect for the default health check endpoint.
-  # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+  # Skip http-to-https redirect for the default health check endpoints.
+  config.ssl_options = { redirect: { exclude: ->(request) { ["/up", "/health"].include?(request.path) } } }
 
-  # Log to STDOUT with the current request id as a default log tag.
+  # Log to STDOUT with the current request id as a default log tag for container logs.
   config.log_tags = [ :request_id ]
-  config.logger   = ActiveSupport::TaggedLogging.logger(STDOUT)
+  config.logger = ActiveSupport::TaggedLogging.new(
+    Logger.new(STDOUT, level: ENV.fetch("RAILS_LOG_LEVEL", "info"))
+  )
+
+  # Configure log formatting for container environment
+  config.log_formatter = Logger::Formatter.new.tap do |formatter|
+    formatter.datetime_format = "%Y-%m-%d %H:%M:%S UTC"
+  end
 
   # Change to "debug" to log everything (including potentially personally-identifiable information!)
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
 
   # Prevent health checks from clogging up the logs.
   config.silence_healthcheck_path = "/up"
+  config.silence_healthcheck_path = "/health" # Our custom health check endpoint
 
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
@@ -80,11 +92,16 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # In container deployment, allow requests from localhost and the container
+  config.hosts = [
+    "localhost",
+    "127.0.0.1",
+    /.*\.localhost$/,
+    ENV.fetch("ALLOWED_HOST", "localhost")
+  ]
+
+  # Skip DNS rebinding protection for health check endpoints.
+  config.host_authorization = {
+    exclude: ->(request) { ["/up", "/health"].include?(request.path) }
+  }
 end

@@ -24,11 +24,48 @@
 # Any libraries that use a connection pool or another resource pool should
 # be configured to provide at least as many connections as the number of
 # threads. This includes Active Record's `pool` parameter in `database.yml`.
+
+require 'fileutils'
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
-# Specifies the `port` that Puma will listen on to receive requests; default is 3000.
-port ENV.fetch("PORT", 3000)
+# Environment-specific binding configuration
+if ENV["RAILS_ENV"] == "production"
+  # In production, use Unix socket for Nginx communication
+  socket_directory = File.dirname(ENV.fetch("SOCKET_PATH", "/app/tmp/sockets/puma.sock"))
+
+  # Ensure socket directory exists
+  FileUtils.mkdir_p(socket_directory) unless Dir.exist?(socket_directory)
+
+  # Bind to Unix socket
+  bind "unix://#{ENV.fetch('SOCKET_PATH', '/app/tmp/sockets/puma.sock')}"
+
+  # Configure workers for container environment
+  # Use number of CPU cores, but cap at 4 to avoid memory issues
+  workers ENV.fetch("WEB_CONCURRENCY") { [Integer(Concurrent.processor_count), 4].min }
+
+  # Set worker timeout and boot timeout for container environment
+  worker_timeout 30
+  worker_boot_timeout 30
+
+  # Preload app for better performance in production
+  preload_app!
+
+  # Configure worker lifecycle
+  before_fork do
+    require 'puma_worker_killer'
+    PumaWorkerKiller.config do |config|
+      config.ram = 1024 # MB
+      config.frequency = 5 # seconds
+      config.percent_usage = 0.98
+      config.rolling_restart_frequency = 6 * 3600 # 6 hours
+    end
+    PumaWorkerKiller.start
+  end
+else
+  # In development, use TCP port
+  port ENV.fetch("PORT", 3000)
+end
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
