@@ -1,0 +1,50 @@
+# Docker Compose development override for Ragtime
+# Maintains production parity with Nginx + Rails architecture
+# Adds hot-reload capabilities while keeping identical architecture
+# This file is automatically loaded by docker-compose up
+#
+# Usage:
+#   Development: docker-compose --profile development up (loads this file automatically)
+#   Production only: docker-compose --profile production up (ignores this file)
+
+services:
+  # Enable development profile by default (when no profile specified)
+  ragtime:
+    profiles:
+      - development  # Enable development profile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production  # Use same target as production
+    image: ragtime:dev
+    container_name: ragtime-dev
+    volumes:
+      # Hot-reload source code mounts (preserves architecture)
+      - .:/rails:cached
+      - /rails/node_modules  # Prevent node_modules conflicts
+      - /rails/frontend/node_modules
+      - /usr/local/bundle  # Preserve gems between restarts
+      # Development data persistence (override from main file)
+      - ragtime_dev_db:/rails/db
+      - ragtime_dev_storage:/rails/storage
+      - ragtime_dev_log:/rails/log
+      - ragtime_dev_tmp:/rails/tmp
+    ports:
+      # Add direct Rails access for debugging (in addition to port 80 from main)
+      - "3000:3000"  # Direct Rails access for debugging
+    # Override command to enable hot-reload with process restart
+    command: >
+      bash -c "
+      # Install foreman for process management
+      gem install foreman --no-document &&
+      # Start Nginx in background
+      nginx -g 'daemon off;' &
+      # Start Rails with automatic restart on file changes
+      while true; do
+        ./bin/rails server -p 3000 -e development -b 0.0.0.0 || true
+        echo 'Rails server stopped, restarting in 2 seconds...'
+        sleep 2
+      done
+      "
+    stdin_open: true
+    tty: true

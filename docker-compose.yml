@@ -1,0 +1,110 @@
+# Docker Compose configuration for Ragtime
+# Production-optimized single container architecture (Nginx + Rails)
+# Perfect parity between development and production environments
+#
+# Usage:
+#   Production: docker-compose --profile production up
+#   Development: docker-compose --profile development up
+
+services:
+  # Ragtime application - single container with Nginx + Rails
+  # Development service with profile (default when no profile specified)
+  ragtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ragtime:latest
+    container_name: ragtime-app
+    restart: unless-stopped
+    profiles:
+      - development
+    ports:
+      - "80:80"  # Nginx serves on port 80, proxies to Rails on 3000
+    environment:
+      # Development environment (uses development credentials automatically)
+      - RAILS_ENV=development
+      - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL:-debug}
+      - WEB_CONCURRENCY=1
+      - RAILS_MAX_THREADS=5
+      # SECURITY: NEVER set ANTHROPIC_API_KEY here - use Rails credentials only
+    volumes:
+      # Development data persistence
+      - ragtime_dev_db:/rails/db
+      - ragtime_dev_storage:/rails/storage
+      - ragtime_dev_log:/rails/log
+      - ragtime_dev_tmp:/rails/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Production service with profile
+  ragtime-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ragtime:latest
+    container_name: ragtime-prod
+    restart: unless-stopped
+    profiles:
+      - production
+    ports:
+      - "80:80"  # Nginx serves on port 80, proxies to Rails on 3000
+    environment:
+      # Production environment - ONLY RAILS_MASTER_KEY from environment
+      - RAILS_ENV=production
+      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+      - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL:-info}
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-2}
+      - RAILS_MAX_THREADS=${RAILS_MAX_THREADS:-3}
+      # SECURITY: NEVER set ANTHROPIC_API_KEY here - use Rails credentials only
+    volumes:
+      # Persistent data volumes (same as Fly.io production setup)
+      - ragtime_db:/rails/db
+      - ragtime_storage:/rails/storage
+      - ragtime_log:/rails/log
+      - ragtime_tmp:/rails/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Define named volumes for data persistence
+volumes:
+  # Development volumes
+  ragtime_dev_db:
+    driver: local
+    name: ragtime-dev-db
+  ragtime_dev_storage:
+    driver: local
+    name: ragtime-dev-storage
+  ragtime_dev_log:
+    driver: local
+    name: ragtime-dev-log
+  ragtime_dev_tmp:
+    driver: local
+    name: ragtime-dev-tmp
+
+  # Production volumes
+  ragtime_db:
+    driver: local
+    name: ragtime-production-db
+  ragtime_storage:
+    driver: local
+    name: ragtime-production-storage
+  ragtime_log:
+    driver: local
+    name: ragtime-production-log
+  ragtime_tmp:
+    driver: local
+    name: ragtime-production-tmp
+
+# Production network configuration
+networks:
+  default:
+    name: ragtime-network
+    driver: bridge
