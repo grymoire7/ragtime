@@ -1,0 +1,15 @@
+# Production Procfile for Ragtime containerized deployment
+# Defines processes for foreman process management in production environment
+
+# Nginx reverse proxy server running in foreground
+# Serves static files and proxies Rails requests
+web: nginx -g 'daemon off;'
+
+# Rails Puma web server
+# Handles application requests on port 3000
+# Uses production configuration with proper threading
+rails: bundle exec puma -C config/puma.rb
+
+# Solid Queue background job processor
+# Processes document processing and chat response jobs
+worker: bundle exec solid_queue start
