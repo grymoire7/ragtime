@@ -106,7 +106,7 @@ finish early, streaming is a great polish feature.
   - Prevents AI API abuse while allowing recruiter access
   - Comprehensive test coverage (13 auth specs)
 
-**Phase 7: Testing and refinement** 🔄 IN PROGRESS
+**Phase 7: Testing and refinement** ✅ COMPLETE
 - ✅ Core regression tests implemented (222 total specs passing)
   - Document model tests for chunk ordering (guards against display bugs)
   - DocumentDetailView tests for chunk highlighting and visibility
@@ -117,8 +117,8 @@ finish early, streaming is a great polish feature.
   - RAG prompt includes strict citation guidelines
   - Clear instructions to avoid hallucination and irrelevant citations
   - Relevance scoring displayed to users (0-1 scale)
-- 🔄 Manual testing and quality validation (Option A)
-  - Upload and test various document types (PDF, TXT, DOCX)
+- ✅ Manual testing and quality validation
+  - Upload and test various document types (PDF, TXT, DOCX, MD)
   - Verify RAG pipeline produces accurate, cited answers
   - Test edge cases: empty documents, large documents, special characters
   - Validate citation links navigate correctly to source documents
