@@ -254,17 +254,18 @@ async function sendMessage() {
       try {
         await loadChat(currentChat.value.id);
 
-        // Check if we have an assistant response with content
-        const hasAssistantResponse = messages.value.some(
-          msg => msg.role === 'assistant' && msg.content && msg.content.trim().length > 0
-        );
+        // Check if we have a NEW assistant response (more messages than when we started)
+        const hasNewAssistantResponse = messages.value.length > initialMessageCount &&
+          messages.value.some(
+            msg => msg.role === 'assistant' && msg.content && msg.content.trim().length > 0
+          );
 
-        // Stop polling if we got an assistant response with content or reached max attempts
-        if (hasAssistantResponse || attempts >= maxAttempts) {
+        // Stop polling if we got a new assistant response with content or reached max attempts
+        if (hasNewAssistantResponse || attempts >= maxAttempts) {
           clearInterval(pollInterval);
           sending.value = false;
 
-          if (!hasAssistantResponse && attempts >= maxAttempts) {
+          if (!hasNewAssistantResponse && attempts >= maxAttempts) {
             error.value = 'Response took too long. Please refresh to see the answer.';
           }
         }
@@ -755,6 +756,7 @@ onActivated(() => {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+  text-align: left;
 }
 
 .message-user .message-text {
