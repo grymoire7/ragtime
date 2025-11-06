@@ -124,8 +124,13 @@ finish early, streaming is a great polish feature.
   - Validate citation links navigate correctly to source documents
   - Test date filtering functionality with multiple documents
   - Cross-browser validation (Chrome, Firefox, Safari)
+- ✅ Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
+  - Factory-based test documents with predictable embeddings
+  - Complete end-to-end pipeline flow validation
+  - Vector search, prompt building, and answer generation testing
+  - Empty context handling and error scenario validation
+  - 12 new integration examples with 0 failures
 - 🔄 Deferred for future (see Testing Strategy section below)
-  - Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
   - E2E tests with Capybara or Playwright for user workflows
   - RAG quality metrics and optional VCR-based LLM regression tests
   - Performance tests for vector search at scale

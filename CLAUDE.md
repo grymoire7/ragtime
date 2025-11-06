@@ -306,8 +306,8 @@ Solid Queue runs automatically in development mode.
 - ✅ Document model tests for chunk ordering
 - ✅ Edge cases (nil documents, empty results, errors)
 
-### Planned Test Expansion (Phase 7)
-- API endpoint integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
+### Completed Test Expansion (Phase 7)
+- ✅ API endpoint integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
 - ✅ RAG answer quality validation
 - ✅ Various document formats and sizes
 - ✅ Frontend component testing
