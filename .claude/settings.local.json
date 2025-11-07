@@ -15,7 +15,9 @@
       "WebFetch(domain:ollama.com)",
       "Bash(bin/rails server:*)",
       "Bash(bundle exec gem:*)",
-      "Bash(RAILS_ENV=test bin/rails db:migrate:*)"
+      "Bash(RAILS_ENV=test bin/rails db:migrate:*)",
+      "Bash(docker-buildx build:*)",
+      "Bash(docker run:*)"
     ],
     "deny": [],
     "ask": []
