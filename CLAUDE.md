@@ -27,15 +27,31 @@ solid engineering practices and modern AI integration.
 - UI improvements (logout button, delete icon visibility)
 - Comprehensive test coverage (222 specs passing)
 
-**Phase 7 In Progress** (Testing and refinement):
-- ✅ Core regression tests implemented
+**Phase 7 Completed** (Testing and refinement):
+- ✅ Core regression tests implemented (222 specs passing)
 - ✅ Prompt quality validation
-- 🔄 Manual testing with various document types (Option A approach)
-- 🔄 Quality validation of RAG pipeline
+- ✅ Manual testing with various document types (Option A approach)
+- ✅ Quality validation of RAG pipeline
+- ✅ Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
 - ⏸️ Integration/E2E tests deferred (reasonable for portfolio scope)
 
+**Phase 8 In Progress** (Deployment and documentation):
+- ✅ Multi-stage Dockerfile created with Nginx reverse proxy
+- ✅ Production Procfile and Rails configuration for containers
+- ✅ Docker Compose with production parity (single container)
+- ✅ Fly.io deployment configuration (ord region, persistent volumes)
+- ✅ Active Storage configured for persistent volume
+- ✅ Production database configuration for persistent volume
+- ✅ sqlite-vec extension loading fixed in production containers
+- ✅ Docker buildx cross-platform compatibility (ARM64 → AMD64)
+- ✅ Database initialization automation in container startup
+- ✅ Rails credentials integration (RAILS_MASTER_KEY)
+- ✅ Convenient development scripts created
+- ⚠️ Solid Queue worker still has issues (installation runs but worker fails)
+- 🔄 Next: Fix Solid Queue worker, then deploy to Fly.io
+
 **Next Phases**:
-- Phase 8: Deployment and documentation
+- Phase 8: Complete deployment and documentation
 - Phase 9: Optional enhancements
 
 ## Technology Stack
@@ -229,6 +245,32 @@ bin/rails server
 ### Background Jobs
 Solid Queue runs automatically in development mode.
 
+### Docker Development Scripts
+
+For convenient local testing with Docker containers:
+
+**Build and Run Container:**
+```bash
+# Build and run in one command
+./script/rebuild-and-run
+
+# Or step by step
+./script/build-local
+./script/run-local
+```
+
+**Individual Scripts:**
+- `script/build-local` - Builds the cross-platform Docker container
+- `script/run-local` - Runs the container with proper Rails credentials
+- `script/rebuild-and-run` - Combines both build and run operations
+
+**Container Access:**
+- Rails API: http://localhost:8080
+- Vue.js Frontend: http://localhost:8080/frontend/
+- View logs: `docker logs ragtime-test`
+- Follow logs: `docker logs -f ragtime-test`
+- Stop container: `docker stop ragtime-test`
+
 ## Implementation Details
 
 ### Chunking Strategy
@@ -363,14 +405,14 @@ Focus on getting core functionality working end-to-end before polish:
 6. **Then**: Polish, testing, and deployment (Phases 6-8)
 
 **Current Status**: Core RAG system is functional with authentication, citations, and interactive features.
-  Phase 6 complete. Phase 7 (testing/refinement) in progress with manual testing approach.
+  Phase 6 complete. Phase 7 complete. Phase 8 deployment in progress.
 
-**Tests**: Tests are important and added regularly (222 specs passing).
+**Tests**: Comprehensive test suite (222 specs passing) covering core functionality and RAG pipeline.
   sqlite-vec limitations required careful test design. We unit test with rspec.
 
 **Critical Path**: Working demo that's deployable and interview-ready ✅
-**In Progress**: Manual testing and quality validation (Phase 7)
-**Next**: Deployment to production (Phase 8)
+**In Progress**: Cross-platform Docker testing and Fly.io deployment (Phase 8)
+**Next**: Complete deployment and documentation (Phase 8)
 **Nice-to-Have**: Streaming (Phase 9), advanced features, extensive test coverage
 
 ## Resources
@@ -379,3 +421,4 @@ Focus on getting core functionality working end-to-end before polish:
 - Rails guides: https://guides.rubyonrails.org
 - ruby_llm gem: https://github.com/crmne/ruby_llm
 - sqlite-vec: https://github.com/asg017/sqlite-vec
+- solid queue has its own database: storage/production_queue.sqlite3

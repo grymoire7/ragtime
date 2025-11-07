@@ -1,0 +1,19 @@
+#!/bin/bash
+# Build and run the local Ragtime Docker container
+# Usage: script/rebuild-and-run
+
+set -e
+
+echo "🔨🚀 Building and running Ragtime container..."
+
+# Build the container
+echo "Step 1: Building container..."
+script/build-local
+
+# Run the container
+echo ""
+echo "Step 2: Running container..."
+script/run-local
+
+echo ""
+echo "🎉 Ragtime is now running at http://localhost:8080"

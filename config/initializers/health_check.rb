@@ -11,32 +11,39 @@ Rails.application.configure do
 end
 
 # Verify sqlite-vec extension loads correctly in production
-begin
-  # Test sqlite-vec extension availability
-  require 'sqlite3'
+# Skip during asset precompilation to avoid dependency issues in Docker
+return if ENV['SKIP_SQLITE_VEC'] == 'true'
 
-  # Create a temporary in-memory database to test the extension
-  db = SQLite3::Database.new(':memory:')
+unless ENV['SKIP_SQLITE_VEC'] == 'true'
+  begin
+    # Test sqlite-vec extension availability
+    require 'sqlite3'
 
-  # Try to load the vec extension
-  db.enable_load_extension(true)
-  db.load_extension('vec')
-  db.enable_load_extension(false)
+    # Create a temporary in-memory database to test the extension
+    db = SQLite3::Database.new(':memory:')
 
-  Rails.logger.info "sqlite-vec extension loaded successfully" if defined?(Rails.logger)
-rescue LoadError => e
-  Rails.logger.error "Failed to load sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
-  # In production, we want to fail fast if the extension isn't available
-  if Rails.env.production?
-    Rails.logger.error "CRITICAL: sqlite-vec extension is required in production. Exiting."
-    exit 1
+    # Try to load the vec extension using absolute path
+    db.enable_load_extension(true)
+    require 'sqlite_vec'
+    extension_path = SqliteVec.loadable_path + '.so'
+    db.load_extension(extension_path)
+    db.enable_load_extension(false)
+
+    Rails.logger.info "sqlite-vec extension loaded successfully" if defined?(Rails.logger)
+  rescue LoadError => e
+    Rails.logger.error "Failed to load sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
+    # In production, we want to fail fast if the extension isn't available
+    if Rails.env.production?
+      Rails.logger.error "CRITICAL: sqlite-vec extension is required in production. Exiting."
+      exit 1
+    end
+  rescue => e
+    Rails.logger.error "Error verifying sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
+    if Rails.env.production?
+      Rails.logger.error "CRITICAL: Unable to verify sqlite-vec extension. Exiting."
+      exit 1
+    end
+  ensure
+    db&.close
   end
-rescue => e
-  Rails.logger.error "Error verifying sqlite-vec extension: #{e.message}" if defined?(Rails.logger)
-  if Rails.env.production?
-    Rails.logger.error "CRITICAL: Unable to verify sqlite-vec extension. Exiting."
-    exit 1
-  end
-ensure
-  db&.close
 end

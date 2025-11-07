@@ -11,4 +11,19 @@ if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
 fi
 
+# If running foreman (production deployment), prepare databases
+if [[ "$*" == *"foreman"* ]]; then
+  echo "🚀 Setting up Ragtime databases for production..."
+
+  # Create and migrate main database
+  ./bin/rails db:create RAILS_ENV=production
+  ./bin/rails db:migrate RAILS_ENV=production
+
+  # Create and migrate queue database
+  ./bin/rails db:create:queue RAILS_ENV=production
+  ./bin/rails solid_queue:install RAILS_ENV=production
+
+  echo "✅ Database setup complete!"
+fi
+
 exec "${@}"

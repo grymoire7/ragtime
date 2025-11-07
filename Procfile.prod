@@ -12,4 +12,4 @@ rails: bundle exec puma -C config/puma.rb
 
 # Solid Queue background job processor
 # Processes document processing and chat response jobs
-worker: bundle exec solid_queue start
+worker: bundle exec rails solid_queue:start

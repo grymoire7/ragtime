@@ -1,0 +1,41 @@
+#!/bin/bash
+# Run the local Ragtime Docker container
+# Usage: script/run-local
+
+set -e
+
+echo "🚀 Starting Ragtime container for local testing..."
+
+# Check if production credentials exist
+if [ ! -f "config/credentials/production.key" ]; then
+    echo "❌ Error: config/credentials/production.key not found"
+    echo "Please ensure the production credentials file exists before running the container."
+    exit 1
+fi
+
+# Remove existing container if it exists
+echo "🗑️  Removing existing container..."
+docker rm ragtime-test 2>/dev/null || true
+
+# Run the new container
+echo "🏃 Starting new container..."
+CONTAINER_ID=$(docker run -d --name ragtime-test -p 8080:80 -e RAILS_ENV=production -e RAILS_MASTER_KEY=$(cat config/credentials/production.key) ragtime:latest)
+
+echo "✅ Container started!"
+echo ""
+echo "Container details:"
+echo "  Name: ragtime-test"
+echo "  ID: $CONTAINER_ID"
+echo "  URL: http://localhost:8080"
+echo ""
+echo "To view logs:"
+echo "  docker logs ragtime-test"
+echo ""
+echo "To follow logs:"
+echo "  docker logs -f ragtime-test"
+echo ""
+echo "To stop the container:"
+echo "  docker stop ragtime-test"
+echo ""
+echo "To rebuild and run:"
+echo "  script/build-local && script/run-local"

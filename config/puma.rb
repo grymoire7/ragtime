@@ -42,7 +42,13 @@ if ENV["RAILS_ENV"] == "production"
 
   # Configure workers for container environment
   # Use number of CPU cores, but cap at 4 to avoid memory issues
-  workers ENV.fetch("WEB_CONCURRENCY") { [Integer(Concurrent.processor_count), 4].min }
+  # Fallback to 2 workers if Concurrent is not available
+  worker_count = begin
+    Concurrent.processor_count
+  rescue NameError
+    2 # Fallback if Concurrent is not available
+  end
+  workers ENV.fetch("WEB_CONCURRENCY") { [Integer(worker_count), 4].min }
 
   # Set worker timeout and boot timeout for container environment
   worker_timeout 30
@@ -59,6 +65,8 @@ if ENV["RAILS_ENV"] == "production"
       config.frequency = 5 # seconds
       config.percent_usage = 0.98
       config.rolling_restart_frequency = 6 * 3600 # 6 hours
+      config.reaper_status_logs = true # setting this to false will not log lines like:
+      # PumaWorkerKiller: Consuming 54.34765625 mb with master and 2 workers.
     end
     PumaWorkerKiller.start
   end
