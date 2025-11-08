@@ -6,8 +6,9 @@ RubyLLM.configure do |config|
   config.default_model = 'claude-3-5-haiku-20241022'
   config.default_embedding_model = "voyage-3.5-lite"
   
-  # Use the new association-based acts_as API (recommended)
+  # Use acts_as API but don't load models from database (use JSON registry instead)
   config.use_new_acts_as = true
+  config.model_registry_class = nil  # Forces fallback to JSON model registry
 end
 
 Rails.application.configure do
@@ -34,12 +35,12 @@ Rails.application.configure do
     },
     production: {
       chat: {
-        model: 'claude-3-5-haiku-20241022',
-        provider: :anthropic
+        model: 'gpt-4o-mini',
+        provider: :openai
       },
       embedding: {
-        model: 'voyage-3.5-lite',
-        provider: :anthropic
+        model: 'text-embedding-3-small',
+        provider: :openai
       }
     }
   }

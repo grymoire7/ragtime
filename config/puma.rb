@@ -65,10 +65,18 @@ if ENV["RAILS_ENV"] == "production"
       config.frequency = 5 # seconds
       config.percent_usage = 0.98
       config.rolling_restart_frequency = 6 * 3600 # 6 hours
-      config.reaper_status_logs = true # setting this to false will not log lines like:
+      config.reaper_status_logs = false # setting this to false will not log lines like:
       # PumaWorkerKiller: Consuming 54.34765625 mb with master and 2 workers.
     end
     PumaWorkerKiller.start
+  end
+
+  # Reconfigure RubyLLM in each worker after fork
+  before_worker_boot do
+    RubyLLM.configure do |config|
+      config.anthropic_api_key = ENV['ANTHROPIC_API_KEY'] || Rails.application.credentials.dig(:anthropic_api_key)
+      config.openai_api_key = ENV['OPENAI_API_KEY'] || Rails.application.credentials.dig(:openai_api_key)
+    end
   end
 else
   # In development, use TCP port
