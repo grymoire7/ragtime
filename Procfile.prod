@@ -5,11 +5,8 @@
 # Serves static files and proxies Rails requests
 web: nginx -g 'daemon off;'
 
-# Rails Puma web server
+# Rails Puma web server with Solid Queue in-process
 # Handles application requests on port 3000
 # Uses production configuration with proper threading
-rails: bundle exec puma -C config/puma.rb
-
-# Solid Queue background job processor
-# Processes document processing and chat response jobs
-worker: bundle exec rails solid_queue:start
+# SOLID_QUEUE_IN_PUMA enables background job processing within Puma
+rails: SOLID_QUEUE_IN_PUMA=1 bundle exec puma -C config/puma.rb
