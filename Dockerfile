@@ -115,6 +115,11 @@ RUN rm -f /etc/nginx/sites-enabled/default && \
 
 # Create Nginx config for Rails reverse proxy
 RUN cat > /etc/nginx/sites-available/ragtime << 'EOF'
+# Upstream configuration for Puma Unix socket
+upstream puma {
+    server unix:///app/tmp/sockets/puma.sock fail_timeout=0;
+}
+
 server {
     listen 80;
     server_name localhost;
@@ -154,7 +159,7 @@ server {
 
     # API routes for frontend
     location /api/ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://puma;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -173,7 +178,7 @@ server {
 
     # Rails application
     location @rails {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://puma;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
