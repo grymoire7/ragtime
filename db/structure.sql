@@ -52,14 +52,6 @@ FOREIGN KEY ("document_id")
 );
 CREATE INDEX "index_chunks_on_document_id" ON "chunks" ("document_id") /*application='Ragtime'*/;
 CREATE INDEX "index_chunks_on_position" ON "chunks" ("position") /*application='Ragtime'*/;
-CREATE VIRTUAL TABLE vec_chunks USING vec0(
-            chunk_id INTEGER PRIMARY KEY,
-            embedding FLOAT[512]
-          );
-CREATE TABLE IF NOT EXISTS "vec_chunks_info" (key text primary key, value any);
-CREATE TABLE IF NOT EXISTS "vec_chunks_chunks"(chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,size INTEGER NOT NULL,validity BLOB NOT NULL,rowids BLOB NOT NULL);
-CREATE TABLE IF NOT EXISTS "vec_chunks_rowids"(rowid INTEGER PRIMARY KEY AUTOINCREMENT,id,chunk_id INTEGER,chunk_offset INTEGER);
-CREATE TABLE IF NOT EXISTS "vec_chunks_vector_chunks00"(rowid PRIMARY KEY,vectors BLOB NOT NULL);
 CREATE TABLE IF NOT EXISTS "solid_queue_jobs" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "queue_name" varchar NOT NULL, "class_name" varchar NOT NULL, "arguments" text, "priority" integer DEFAULT 0 NOT NULL, "active_job_id" varchar, "scheduled_at" datetime(6), "finished_at" datetime(6), "concurrency_key" varchar, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
 CREATE INDEX "index_solid_queue_jobs_on_active_job_id" ON "solid_queue_jobs" ("active_job_id") /*application='Ragtime'*/;
 CREATE INDEX "index_solid_queue_jobs_on_class_name" ON "solid_queue_jobs" ("class_name") /*application='Ragtime'*/;
@@ -116,7 +108,16 @@ FOREIGN KEY ("job_id")
  ON DELETE CASCADE);
 CREATE UNIQUE INDEX "index_solid_queue_scheduled_executions_on_job_id" ON "solid_queue_scheduled_executions" ("job_id") /*application='Ragtime'*/;
 CREATE INDEX "index_solid_queue_dispatch_all" ON "solid_queue_scheduled_executions" ("scheduled_at", "priority", "job_id") /*application='Ragtime'*/;
+CREATE VIRTUAL TABLE vec_chunks USING vec0(
+        chunk_id INTEGER PRIMARY KEY,
+        embedding FLOAT[1536]
+      );
+CREATE TABLE IF NOT EXISTS "vec_chunks_info" (key text primary key, value any);
+CREATE TABLE IF NOT EXISTS "vec_chunks_chunks"(chunk_id INTEGER PRIMARY KEY AUTOINCREMENT,size INTEGER NOT NULL,validity BLOB NOT NULL,rowids BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS "vec_chunks_rowids"(rowid INTEGER PRIMARY KEY AUTOINCREMENT,id,chunk_id INTEGER,chunk_offset INTEGER);
+CREATE TABLE IF NOT EXISTS "vec_chunks_vector_chunks00"(rowid PRIMARY KEY,vectors BLOB NOT NULL);
 INSERT INTO "schema_migrations" (version) VALUES
+('20251108182847'),
 ('20251107201712'),
 ('20251104164359'),
 ('20251102221021'),

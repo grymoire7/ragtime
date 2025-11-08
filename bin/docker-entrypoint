@@ -18,6 +18,10 @@ if [[ "$*" == *"foreman"* ]]; then
   # Prepare all databases (creates and migrates if needed)
   ./bin/rails db:prepare RAILS_ENV=production
 
+  # Seed models (idempotent - safe to run multiple times)
+  echo "📦 Seeding models..."
+  ./bin/rails db:seed RAILS_ENV=production
+
   echo "✅ Database setup complete!"
 fi
 

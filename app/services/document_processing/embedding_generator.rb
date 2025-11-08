@@ -1,9 +1,14 @@
 module DocumentProcessing
   class EmbeddingGenerator
-    # Generate embeddings for text using Anthropic's voyage-3.5-lite model
-    # This model produces 512-dimensional embeddings
+    # Target embedding dimension for vec_chunks virtual table
+    # Standardized to 1536 to match OpenAI text-embedding-3-small (production)
+    TARGET_DIMENSION = 1536
+
+    # Generate embeddings for text using environment-specific embedding model
+    # Production: OpenAI text-embedding-3-small (1536 dimensions)
+    # Development: Ollama jina-embeddings (512 dimensions, padded to 1536)
     # @param text [String] the text to embed
-    # @return [Array<Float>] the embedding vector
+    # @return [Array<Float>] the embedding vector (always 1536 dimensions)
     # @raises [EmbeddingError] if embedding generation fails
     def self.generate(text)
       new.generate(text)
@@ -35,7 +40,11 @@ module DocumentProcessing
         )
 
         # RubyLLM returns a RubyLLM::Embedding object with .vectors method
-        response.vectors
+        embedding = response.vectors
+
+        # Pad embedding to TARGET_DIMENSION if needed (for dev Ollama embeddings)
+        # OpenAI embeddings are already 1536, so this is a no-op in production
+        pad_embedding(embedding)
       rescue => e
         raise EmbeddingError, "Failed to generate embedding: #{e.message}"
       end
@@ -57,6 +66,23 @@ module DocumentProcessing
         all_embeddings
       rescue => e
         raise EmbeddingError, "Failed to generate batch embeddings: #{e.message}"
+      end
+    end
+
+    private
+
+    # Pad or truncate embedding to TARGET_DIMENSION
+    # @param embedding [Array<Float>] the embedding vector
+    # @return [Array<Float>] padded/truncated embedding vector
+    def pad_embedding(embedding)
+      return embedding if embedding.length == TARGET_DIMENSION
+
+      if embedding.length < TARGET_DIMENSION
+        # Pad with zeros to reach target dimension
+        embedding + Array.new(TARGET_DIMENSION - embedding.length, 0.0)
+      else
+        # Truncate if longer than target (shouldn't happen in practice)
+        embedding.take(TARGET_DIMENSION)
       end
     end
 
