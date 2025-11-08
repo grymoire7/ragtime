@@ -47,8 +47,12 @@ solid engineering practices and modern AI integration.
 - ✅ Database initialization automation in container startup
 - ✅ Rails credentials integration (RAILS_MASTER_KEY)
 - ✅ Convenient development scripts created
-- ⚠️ Solid Queue worker still has issues (installation runs but worker fails)
-- 🔄 Next: Fix Solid Queue worker, then deploy to Fly.io
+- ✅ Solid Queue working with in-process execution (Puma plugin)
+- ✅ RubyLLM model registry configuration fixed for production
+- ✅ OpenAI embeddings integration (text-embedding-3-small, 1536 dimensions)
+- ✅ Document upload and processing working in container
+- ⚠️ Chat creation endpoint has validation issue (422 error)
+- 🔄 Next: Fix chat creation, then deploy to Fly.io
 
 **Next Phases**:
 - Phase 8: Complete deployment and documentation
@@ -61,10 +65,11 @@ solid engineering practices and modern AI integration.
 - **Database**: SQLite3 (≥2.1) for relational data
 - **Vector Search**: sqlite-vec (0.1.6) for vector similarity search
 - **File Storage**: Active Storage for document uploads
-- **Background Jobs**: Solid Queue (Rails 8 default)
-- **LLM Integration**: ruby_llm gem (1.8)
-- **Embedding API**: Anthropic Voyage 3.5 Lite
-- **Chat API**: Anthropic Claude 3.5 Haiku
+- **Background Jobs**: Solid Queue (Rails 8 default, in-process via Puma plugin)
+- **LLM Integration**: ruby_llm gem (1.9)
+- **Production Embedding API**: OpenAI text-embedding-3-small (1536 dimensions)
+- **Production Chat API**: OpenAI gpt-4o-mini
+- **Development**: Anthropic Claude 3.5 Haiku (chat), Ollama jina-embeddings (512 dimensions)
 
 ### Document Processing
 - **PDF**: pdf-reader gem
@@ -149,7 +154,8 @@ solid engineering practices and modern AI integration.
 - Preserves paragraph boundaries
 
 **EmbeddingGenerator** - Creates vector embeddings
-- Uses Anthropic Voyage 3.5 Lite via ruby_llm
+- Production: Uses OpenAI text-embedding-3-small (1536 dimensions) via ruby_llm
+- Development: Uses Ollama jina-embeddings-v2-small-en (512 dimensions)
 - Processes chunks in batches
 - Stores embeddings in SQLite as BLOBs
 
@@ -168,7 +174,8 @@ solid engineering practices and modern AI integration.
 - Shows relevance scores for each chunk
 
 **AnswerGenerator** - Generates responses
-- Uses Anthropic Claude 3.5 Haiku
+- Production: Uses OpenAI gpt-4o-mini
+- Development: Uses Anthropic Claude 3.5 Haiku
 - Implements RAG pattern with retrieved context
 - **Phase 4**: Returns structured citations with metadata
   - chunk_id, document_id, document_title
@@ -195,7 +202,9 @@ solid engineering practices and modern AI integration.
 ### Vector Storage
 Chunks table includes:
 - `embedding` (BLOB) - Vector embeddings stored as binary
-- SQLite virtual table with vec0 extension for similarity search
+- SQLite virtual table `vec_chunks` with vec0 extension for similarity search
+- Production: 1536 dimensions (OpenAI text-embedding-3-small)
+- Development: 512 dimensions (Ollama jina-embeddings-v2-small-en)
 - Uses cosine distance for similarity matching
 
 ### Citation Storage (Phase 4)
@@ -213,9 +222,10 @@ Messages table includes:
 
 ## Configuration
 
-### Environment Variables Required
-- `ANTHROPIC_API_KEY` - For embeddings and chat completion
-- Additional LLM provider keys if using other models
+### Environment Variables Required (via Rails Credentials)
+- `OPENAI_API_KEY` - For production embeddings (text-embedding-3-small) and chat (gpt-4o-mini)
+- `ANTHROPIC_API_KEY` - For development chat (Claude 3.5 Haiku)
+- Development embeddings use local Ollama (no API key needed)
 
 ### SQLite Extensions
 - **sqlite-vec**: Requires native extension installation
@@ -305,10 +315,22 @@ For convenient local testing with Docker containers:
 - Can add as Phase 8 enhancement if time permits
 - Shows good judgment on MVP vs polish
 
-### Why Anthropic APIs?
-- High-quality embeddings (Voyage 3.5 Lite)
-- Fast, efficient chat model (Claude 3.5 Haiku)
-- ruby_llm gem provides clean integration
+### API Provider Strategy
+- **Production**: OpenAI for both embeddings and chat
+  - Consolidates API costs under single provider
+  - text-embedding-3-small: cost-effective, high-quality embeddings (1536 dims)
+  - gpt-4o-mini: fast, efficient chat model
+- **Development**: Anthropic + Ollama
+  - Claude 3.5 Haiku for high-quality chat responses
+  - Ollama jina-embeddings: free local embeddings (512 dims)
+- ruby_llm gem (1.9) provides unified interface across providers
+
+### Solid Queue Configuration (Phase 8)
+- Uses in-process execution via Puma plugin (`SOLID_QUEUE_IN_PUMA=1`)
+- Single database for both app data and queue (simplified deployment)
+- Avoids separate queue database complexity
+- Migration-based table creation for reliable container initialization
+- **Critical**: RubyLLM model registry must use JSON files, not database (`model_registry_class = nil`)
 
 ## Known Limitations & Future Enhancements
 
