@@ -74,7 +74,7 @@ group :development, :test do
   gem "shoulda-matchers", "~> 6.0"
 end
 
-gem "ruby_llm", "~> 1.8"
+gem "ruby_llm", "~> 1.9"
 
 # Document processing
 gem "pdf-reader"      # PDF text extraction
