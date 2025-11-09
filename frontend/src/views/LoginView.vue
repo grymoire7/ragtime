@@ -88,8 +88,15 @@ async function handleLogin() {
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   overflow: hidden;
+}
+
+/* Responsive: wider on larger screens */
+@media (min-width: 768px) {
+  .login-card {
+    max-width: 560px;
+  }
 }
 
 .login-header {

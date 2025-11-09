@@ -76,9 +76,7 @@
         >
           <div class="message-avatar">
             <span v-if="message.role === 'user'">You</span>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <span v-else class="avatar-emoji">🎹</span>
           </div>
           <div class="message-content">
             <div v-if="message.role === 'assistant' && hasEmptyContext(message)"
@@ -122,9 +120,7 @@
 
         <div v-if="sending" class="message message-assistant loading-message">
           <div class="message-avatar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <span class="avatar-emoji">🎹</span>
           </div>
           <div class="message-content">
             <div class="typing-indicator">
@@ -737,10 +733,9 @@ onActivated(() => {
   color: white;
 }
 
-.message-assistant .message-avatar svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 2;
+.message-assistant .message-avatar .avatar-emoji {
+  font-size: 1.125rem;
+  line-height: 1;
 }
 
 .message-content {
