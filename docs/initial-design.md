@@ -137,8 +137,8 @@ finish early, streaming is a great polish feature.
   - Automated cross-browser testing
 
 **Phase 8: Deployment and documentation**
-- Solve sqlite-vec native extension deployment
-- The root route (/) currently serves a 404 page. It should redirect to the Vue app instead.
+- ✅ Solved sqlite-vec native extension deployment (automated in docker-entrypoint)
+- ✅ Root route (/) redirects to Vue app (works in production; local dev quirk documented in Phase 9)
 - Create github repository and push code
   - Crreate `LICENSE` (MIT), and initial commit
 - Deploy to Fly.io
@@ -156,6 +156,7 @@ finish early, streaming is a great polish feature.
   - Advanced UI/UX polish
   - Improve and debug `./script/` scripts
 - Low priority:
+  - Fix nginx config to preserve port in local redirects (X-Forwarded-Port header)
   - ActionCable streaming for real-time responses
   - Document preview or PDF viewer
   - Export conversation history

@@ -18,6 +18,47 @@ if [[ "$*" == *"foreman"* ]]; then
   # Prepare all databases (creates and migrates if needed)
   ./bin/rails db:prepare RAILS_ENV=production
 
+  # Initialize vec_chunks virtual table
+  # This must happen after migrations but before app starts
+  echo "🔧 Initializing vec_chunks virtual table..."
+  ./bin/rails runner -e production '
+    puts "🗑️  Dropping all vec_chunks related tables..."
+
+    # List of all possible shadow tables created by sqlite-vec
+    shadow_tables = [
+      "vec_chunks",
+      "vec_chunks_info",
+      "vec_chunks_data",
+      "vec_chunks_config",
+      "vec_chunks_chunks",
+      "vec_chunks_rowids",
+      "vec_chunks_vector_chunks00"
+    ]
+
+    # Drop each table if it exists
+    shadow_tables.each do |table|
+      begin
+        ActiveRecord::Base.connection.execute("DROP TABLE IF EXISTS #{table}")
+        puts "   Dropped: #{table}"
+      rescue => e
+        # Table might not exist, thats ok
+      end
+    end
+
+    puts ""
+    puts "📦 Creating fresh vec_chunks virtual table..."
+
+    # Create the virtual table with 1536 dimensions (OpenAI embeddings)
+    ActiveRecord::Base.connection.execute(<<-SQL)
+      CREATE VIRTUAL TABLE vec_chunks USING vec0(
+        chunk_id INTEGER PRIMARY KEY,
+        embedding FLOAT[1536]
+      );
+    SQL
+
+    puts "✅ vec_chunks table created successfully"
+  ' 2>&1 | grep -v "sqlite-vec extension loaded" || true
+
   # Seed models (idempotent - safe to run multiple times)
   echo "📦 Seeding models..."
   ./bin/rails db:seed RAILS_ENV=production
