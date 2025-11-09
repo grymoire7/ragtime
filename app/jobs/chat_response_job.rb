@@ -23,8 +23,8 @@ class ChatResponseJob < ApplicationJob
       metadata: metadata
     )
 
-    # Broadcast the messages for Turbo Streams (HTML interface)
-    user_message.broadcast_append_to("chat_#{chat.id}", target: "messages")
-    assistant_message.broadcast_append_to("chat_#{chat.id}", target: "messages")
+    # Note: Turbo Streams broadcasts removed because Vue.js frontend uses polling
+    # instead of ActionCable for real-time updates. Broadcasts were causing
+    # SolidCable schema errors and aren't needed for the current architecture.
   end
 end
