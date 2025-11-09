@@ -1,12 +1,10 @@
 class Message < ApplicationRecord
   acts_as_message
   has_many_attached :attachments
-  broadcasts_to ->(message) { "chat_#{message.chat_id}" }
 
-  def broadcast_append_chunk(content)
-    broadcast_append_to "chat_#{chat_id}",
-      target: "message_#{id}_content",
-      partial: "messages/content",
-      locals: { content: content }
-  end
+  # Note: broadcasts_to removed because Vue.js frontend uses HTTP polling
+  # instead of ActionCable for real-time updates. The automatic broadcasts
+  # were causing SolidCable schema errors and aren't needed.
+
+  # broadcast_append_chunk also removed - not used with polling architecture
 end
