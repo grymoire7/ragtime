@@ -139,8 +139,8 @@ finish early, streaming is a great polish feature.
 **Phase 8: Deployment and documentation**
 - ✅ Solved sqlite-vec native extension deployment (automated in docker-entrypoint)
 - ✅ Root route (/) redirects to Vue app (works in production; local dev quirk documented in Phase 9)
-- Create github repository and push code
-  - Crreate `LICENSE` (MIT), and initial commit
+- ✅ Created GitHub repository and pushed code (grymoire7/ragtime)
+  - ✅ Added `LICENSE` (MIT)
 - Deploy to Fly.io
 - Write comprehensive README with portfolio audience in mind
 - Create screenshots and/or GIFs showing key features
