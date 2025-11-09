@@ -141,7 +141,12 @@ finish early, streaming is a great polish feature.
 - ✅ Root route (/) redirects to Vue app (works in production; local dev quirk documented in Phase 9)
 - ✅ Created GitHub repository and pushed code (grymoire7/ragtime)
   - ✅ Added `LICENSE` (MIT)
-- Deploy to Fly.io
+- ✅ Deployed to Fly.io (https://ragtime-docs.fly.dev/)
+  - App name: ragtime-docs
+  - Region: ord (Chicago)
+  - 1GB persistent volume for storage
+  - 512MB RAM, 1 shared CPU
+  - Auto-scaling enabled (min 0 machines)
 - Write comprehensive README with portfolio audience in mind
 - Create screenshots and/or GIFs showing key features
 - Document deployment steps and architecture decisions in `docs/`
