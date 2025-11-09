@@ -1,0 +1,64 @@
+#!/bin/bash
+# Fix corrupted vec_chunks virtual table
+# This happens when migrations partially fail, leaving orphaned shadow tables
+# Usage: script/fix-vec-chunks
+
+set -e
+
+CONTAINER_NAME="ragtime-test"
+
+echo "🔧 Fixing vec_chunks virtual table in container..."
+
+# Check if container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "❌ Container '${CONTAINER_NAME}' is not running"
+  echo "Start it with: script/run-local"
+  exit 1
+fi
+
+# Run the fix
+docker exec "$CONTAINER_NAME" bin/rails runner '
+puts "🗑️  Dropping all vec_chunks related tables..."
+
+# List of all possible shadow tables created by sqlite-vec
+shadow_tables = [
+  "vec_chunks",
+  "vec_chunks_info",
+  "vec_chunks_data",
+  "vec_chunks_config",
+  "vec_chunks_chunks",
+  "vec_chunks_rowids",
+  "vec_chunks_vector_chunks00"
+]
+
+# Drop each table if it exists
+shadow_tables.each do |table|
+  begin
+    ActiveRecord::Base.connection.execute("DROP TABLE IF EXISTS #{table}")
+    puts "   Dropped: #{table}"
+  rescue => e
+    # Table might not exist, thats ok
+  end
+end
+
+puts ""
+puts "📦 Creating fresh vec_chunks virtual table..."
+
+# Create the virtual table with 1536 dimensions (OpenAI embeddings)
+ActiveRecord::Base.connection.execute(<<-SQL)
+  CREATE VIRTUAL TABLE vec_chunks USING vec0(
+    chunk_id INTEGER PRIMARY KEY,
+    embedding FLOAT[1536]
+  );
+SQL
+
+puts "✅ vec_chunks table created successfully"
+puts ""
+
+# Verify
+count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM vec_chunks").first.values.first
+puts "📊 Current vec_chunks rows: #{count}"
+' 2>&1 | grep -v "sqlite-vec extension loaded" || true
+
+echo ""
+echo "✅ Done! vec_chunks table is now ready."

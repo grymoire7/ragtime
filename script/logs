@@ -1,0 +1,65 @@
+#!/bin/bash
+# View container logs with smart filtering
+# Usage: script/logs                    # Last 50 lines
+# Usage: script/logs --errors           # Show only errors
+# Usage: script/logs --jobs             # Show job activity
+# Usage: script/logs --follow           # Follow logs in real-time
+# Usage: script/logs --tail 100         # Last 100 lines
+# Usage: script/logs "search pattern"   # Grep for pattern
+
+set -e
+
+CONTAINER_NAME="ragtime-test"
+
+# Check if container exists
+if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "❌ Container '${CONTAINER_NAME}' does not exist"
+  echo "Build it with: script/build-local && script/run-local"
+  exit 1
+fi
+
+# Default options
+TAIL_LINES=50
+FOLLOW=false
+PATTERN=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --errors)
+      PATTERN="Error|ERROR|error|Exception|EXCEPTION|Failed|FAILED"
+      shift
+      ;;
+    --jobs)
+      PATTERN="ActiveJob|ProcessDocumentJob|ChatResponseJob|Performing|Enqueued"
+      shift
+      ;;
+    --follow|-f)
+      FOLLOW=true
+      shift
+      ;;
+    --tail)
+      TAIL_LINES="$2"
+      shift 2
+      ;;
+    *)
+      # Treat as grep pattern
+      PATTERN="$1"
+      shift
+      ;;
+  esac
+done
+
+# Build command
+if [ "$FOLLOW" = true ]; then
+  CMD="docker logs -f $CONTAINER_NAME 2>&1"
+else
+  CMD="docker logs --tail $TAIL_LINES $CONTAINER_NAME 2>&1"
+fi
+
+# Apply pattern if specified
+if [ -n "$PATTERN" ]; then
+  eval "$CMD" | grep -E "$PATTERN" --color=always
+else
+  eval "$CMD"
+fi

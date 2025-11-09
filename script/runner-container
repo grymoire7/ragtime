@@ -1,0 +1,31 @@
+#!/bin/bash
+# Run Rails code in the production container
+# Usage: script/runner-container 'Model.count'
+# Usage: script/runner-container < script.rb
+
+set -e
+
+CONTAINER_NAME="ragtime-test"
+
+# Check if container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "❌ Container '${CONTAINER_NAME}' is not running"
+  echo "Start it with: script/run-local"
+  exit 1
+fi
+
+# If stdin is a pipe/file, read from it
+if [ ! -t 0 ]; then
+  CODE=$(cat)
+else
+  CODE="$1"
+  if [ -z "$CODE" ]; then
+    echo "Usage: script/runner-container 'Ruby.code.here'"
+    echo "   Or: script/runner-container < script.rb"
+    exit 1
+  fi
+fi
+
+# Run the code and filter out sqlite-vec noise
+# Use || true to prevent grep exit code from failing the script
+docker exec "$CONTAINER_NAME" bin/rails runner "$CODE" 2>&1 | grep -v "sqlite-vec extension loaded" || true

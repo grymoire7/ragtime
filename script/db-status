@@ -1,0 +1,95 @@
+#!/bin/bash
+# Show database status and counts
+# Usage: script/db-status
+
+set -e
+
+CONTAINER_NAME="ragtime-test"
+
+# Check if container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "❌ Container '${CONTAINER_NAME}' is not running"
+  echo "Start it with: script/run-local"
+  exit 1
+fi
+
+echo "📊 Ragtime Database Status"
+echo "=========================="
+echo ""
+
+docker exec "$CONTAINER_NAME" bin/rails runner '
+puts "📁 Documents"
+puts "  Total: #{Document.count}"
+puts "  Completed: #{Document.where(status: "completed").count}"
+puts "  Pending: #{Document.where(status: "pending").count}"
+puts "  Failed: #{Document.where(status: "failed").count}"
+
+if Document.any?
+  puts ""
+  puts "  Recent documents:"
+  Document.order(created_at: :desc).limit(3).each do |doc|
+    status_emoji = case doc.status
+    when "completed" then "✅"
+    when "pending" then "⏳"
+    when "failed" then "❌"
+    else "❓"
+    end
+    puts "    #{status_emoji} #{doc.id}. #{doc.title}"
+  end
+end
+
+puts ""
+puts "🧩 Chunks"
+puts "  Total: #{Chunk.count}"
+
+begin
+  vec_count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM vec_chunks").first.values.first
+  puts "  In vec_chunks: #{vec_count}"
+
+  if vec_count != Chunk.count
+    puts "  ⚠️  Mismatch! Run script/fix-vec-chunks if needed"
+  end
+rescue => e
+  puts "  ⚠️  vec_chunks table error: #{e.message}"
+  puts "  Run script/fix-vec-chunks to fix"
+end
+
+if Chunk.any?
+  chunk = Chunk.first
+  if chunk.embedding
+    puts "  Embedding dimensions: #{chunk.embedding.length}"
+  end
+end
+
+puts ""
+puts "💬 Chats & Messages"
+puts "  Chats: #{Chat.count}"
+puts "  Messages: #{Message.count}"
+puts "    User messages: #{Message.where(role: "user").count}"
+puts "    Assistant messages: #{Message.where(role: "assistant").count}"
+
+if Message.where(role: "assistant").any?
+  cited = Message.where(role: "assistant").select { |m| m.metadata.dig("citations")&.any? }.count
+  total = Message.where(role: "assistant").count
+  puts "    With citations: #{cited}/#{total}"
+end
+
+puts ""
+puts "🤖 Models"
+puts "  Available: #{Model.count}"
+if Model.any?
+  Model.limit(3).each do |model|
+    puts "    • #{model.model_id}"
+  end
+end
+
+puts ""
+puts "⚙️  Configuration"
+puts "  Environment: #{Rails.env}"
+puts "  Default chat model: #{Rails.application.config.x.ruby_llm[Rails.env.to_sym][:chat][:model]}"
+if Rails.application.config.x.ruby_llm[Rails.env.to_sym][:embeddings]
+  puts "  Default embedding model: #{Rails.application.config.x.ruby_llm[Rails.env.to_sym][:embeddings][:model]}"
+end
+' 2>&1 | grep -v "sqlite-vec extension loaded" || true
+
+echo ""
