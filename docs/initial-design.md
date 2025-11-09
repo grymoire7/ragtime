@@ -137,21 +137,28 @@ finish early, streaming is a great polish feature.
   - Automated cross-browser testing
 
 **Phase 8: Deployment and documentation**
-- Deploy to Fly.io or Render
 - Solve sqlite-vec native extension deployment
-- Write comprehensive README with setup instructions
-- Create demo video or GIF showing key features
-- Document environment variable configuration
-- Write technical blog post explaining architecture
+- The root route (/) currently serves a 404 page. It should redirect to the Vue app instead.
+- Deploy to Fly.io
+- Write comprehensive README with portfolio audience in mind
+- Create screenshots and/or GIFs showing key features
+- Document deployment steps and architecture decisions in `docs/`
+  - Reference `docs/README.md` in github README
+- Write technical blog post explaining design, architecture, and challenges
+  - Reference blog post in github README
 
 **Phase 9: Optional enhancements** (if time permits)
-- Replace dollar sign with piano (🎹) symbol as app icon
-- ActionCable streaming for real-time responses
-- Advanced UI/UX polish
-- Document preview or PDF viewer
-- Multi-document conversations with filtering UI
-- Export conversation history
-- Advanced analytics (popular questions, document usage)
+- High priority:
+  - Login page is too narrow on desktop - improve responsive design
+  - Replace vector dollar sign with piano symbol (🎹) as app icon, favicon, and chat avatar
+  - Advanced UI/UX polish
+  - Improve and debug `./script/` scripts
+- Low priority:
+  - ActionCable streaming for real-time responses
+  - Document preview or PDF viewer
+  - Export conversation history
+  - Advanced analytics (popular questions, document usage)
+  - Set cost limits and usage monitoring for AI API calls
 
 ## Risk mitigation
 
