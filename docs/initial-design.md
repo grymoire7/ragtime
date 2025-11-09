@@ -139,6 +139,8 @@ finish early, streaming is a great polish feature.
 **Phase 8: Deployment and documentation**
 - Solve sqlite-vec native extension deployment
 - The root route (/) currently serves a 404 page. It should redirect to the Vue app instead.
+- Create github repository and push code
+  - Crreate `LICENSE` (MIT), and initial commit
 - Deploy to Fly.io
 - Write comprehensive README with portfolio audience in mind
 - Create screenshots and/or GIFs showing key features
