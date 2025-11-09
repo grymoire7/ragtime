@@ -147,6 +147,12 @@ finish early, streaming is a great polish feature.
   - 1GB persistent volume for storage
   - 512MB RAM, 1 shared CPU
   - Auto-scaling enabled (min 0 machines)
+  - **Verified working**: Full end-to-end flow tested in production
+    - ✅ Authentication (login)
+    - ✅ Document upload and processing
+    - ✅ Q&A with accurate answers
+    - ✅ Citation extraction and display
+    - ✅ OpenAI integration (embeddings + chat)
 - Write comprehensive README with portfolio audience in mind
 - Create screenshots and/or GIFs showing key features
 - Document deployment steps and architecture decisions in `docs/`
