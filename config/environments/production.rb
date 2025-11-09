@@ -98,6 +98,7 @@ Rails.application.configure do
     "localhost",
     "127.0.0.1",
     /.*\.localhost$/,
+    /.*\.fly\.dev$/,  # Allow Fly.io hostnames
     ENV.fetch("ALLOWED_HOST", "localhost")
   ]
 
