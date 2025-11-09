@@ -2,11 +2,11 @@ module Rag
   class ChunkRetriever
     # Default number of chunks to retrieve
     DEFAULT_LIMIT = 5
-    # Default distance threshold for cosine similarity
-    # Lower values = more similar (0 = identical, 2 = opposite)
-    # 0.75 threshold = ~62% relevance minimum (filters out low-quality matches)
-    # Slightly increased from 0.7 to handle edge cases where queries are exactly at threshold
-    DEFAULT_DISTANCE_THRESHOLD = 0.75
+    # Default distance threshold for L2 (Euclidean) distance used by sqlite-vec
+    # Lower values = more similar (0 = identical)
+    # Threshold of 1.2 allows for reasonable semantic similarity while filtering noise
+    # Adjusted from 0.75 which was too strict for L2 distance
+    DEFAULT_DISTANCE_THRESHOLD = 1.2
 
     # Retrieve the most relevant chunks for a query
     # @param query [String] the user's question or search query
