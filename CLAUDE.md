@@ -46,13 +46,18 @@ solid engineering practices and modern AI integration.
 - ✅ Docker buildx cross-platform compatibility (ARM64 → AMD64)
 - ✅ Database initialization automation in container startup
 - ✅ Rails credentials integration (RAILS_MASTER_KEY)
-- ✅ Convenient development scripts created
+- ✅ Convenient development scripts created (build-local, run-local, rebuild-and-run)
+- ✅ Debugging helper scripts created (runner-container, fix-vec-chunks, logs, db-status)
 - ✅ Solid Queue working with in-process execution (Puma plugin)
 - ✅ RubyLLM model registry configuration fixed for production
 - ✅ OpenAI embeddings integration (text-embedding-3-small, 1536 dimensions)
+- ✅ Vector search threshold tuned for L2 distance (0.75 → 1.2)
 - ✅ Document upload and processing working in container
-- ⚠️ Chat creation endpoint has validation issue (422 error)
-- 🔄 Next: Fix chat creation, then deploy to Fly.io
+- ✅ Chat creation and Q&A with citations fully functional
+- ✅ ActionCable broadcast errors fixed (removed unused Turbo Streams)
+- ✅ Complete end-to-end flow verified in production container
+- ⚠️ **BLOCKER**: vec_chunks virtual table requires manual fix-vec-chunks after each container start
+- 🔄 Next: Automate vec_chunks initialization in docker-entrypoint, then deploy to Fly.io
 
 **Next Phases**:
 - Phase 8: Complete deployment and documentation
