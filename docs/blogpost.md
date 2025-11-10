@@ -1,12 +1,20 @@
 # Building a Document Q&A System with Rails 8, SQLite-vec, and OpenAI
 
-Every company is trying to figure out how to integrate AI with their proprietary data. The challenge isn't just calling an API—it's building production-ready systems that are reliable, maintainable, and actually useful. I built Ragtime as a portfolio piece to demonstrate how a senior engineer approaches building modern AI-powered applications.
+Every company is trying to figure out how to integrate AI with their
+proprietary data. The challenge isn't just calling an API—it's building
+production-ready systems that are reliable, maintainable, and actually useful.
+I built Ragtime as a portfolio piece to demonstrate how a senior engineer
+approaches building modern AI-powered applications.
 
-Ragtime is a document Q&A system that lets you upload PDFs, TXT files, DOCX documents, and Markdown files, then ask questions and get AI-powered answers with source citations. This post covers the architecture, design decisions, and trade-offs that show how to build these systems from the ground up.
+Ragtime is a document Q&A system that lets you upload PDFs, TXT files, DOCX
+documents, and Markdown files, then ask questions and get AI-powered answers
+with source citations. This post covers the architecture, design decisions, and
+trade-offs that show how to build these systems from the ground up.
 
 ## Architecture Overview
 
-At its core, Ragtime is a RAG (Retrieval-Augmented Generation) system with a clean, modern architecture:
+At its core, Ragtime is a RAG (Retrieval-Augmented Generation) system with a
+clean, modern architecture:
 
 ```
 Vue.js Frontend ←→ Rails 8 API ←→ SQLite + sqlite-vec
@@ -16,25 +24,42 @@ Vue.js Frontend ←→ Rails 8 API ←→ SQLite + sqlite-vec
               OpenAI APIs
 ```
 
-The system processes documents through a pipeline: text extraction → intelligent chunking → vector embedding → similarity search → AI response with citations.
+The system processes documents through a pipeline: text extraction →
+intelligent chunking → vector embedding → similarity search → AI response with
+citations.
 
 ### Why This Architecture?
 
-I chose Rails 8 for the API backend because it brings significant improvements for modern applications: better API support, built-in background job processing with Solid Queue, and enhanced performance optimizations. The API-only design provides clean separation between frontend and backend, making the system more maintainable and scalable.
+I chose Rails 8 for the API backend because it brings significant improvements
+for modern applications: better API support, built-in background job processing
+with Solid Queue, and enhanced performance optimizations. The API-only design
+provides clean separation between frontend and backend, making the system more
+maintainable and scalable.
 
-For the frontend, Vue.js 3 with Composition API provides excellent state management for chat interfaces and a superior user experience compared to server-rendered alternatives. The component-based architecture makes it easy to reason about complex UI interactions like real-time chat and citation display.
+For the frontend, Vue.js 3 with Composition API provides excellent state
+management for chat interfaces and a superior user experience compared to
+server-rendered alternatives. The component-based architecture makes it easy to
+reason about complex UI interactions like real-time chat and citation display.
 
 ## The Vector Storage Decision: SQLite + sqlite-vec
 
-One of the most critical decisions was how to handle vector storage. I evaluated three approaches:
+One of the most critical decisions was how to handle vector storage. I
+evaluated three approaches:
 
 1. **PostgreSQL + pgvector**: The production-standard choice
 2. **Dedicated vector databases** (Pinecone, Weaviate): Specialized solutions
 3. **SQLite + sqlite-vec**: The simplicity-first approach
 
-I chose SQLite + sqlite-vec for Ragtime. Here's why: for a portfolio project demonstrating engineering competence, deployment simplicity matters more than theoretical scalability. SQLite provides a single-file database with zero external dependencies, making deployment and testing straightforward. The sqlite-vec extension provides efficient vector similarity search with cosine distance, more than adequate for demo-scale workloads.
+I chose SQLite + sqlite-vec for Ragtime. Here's why: for a portfolio project
+demonstrating engineering competence, deployment simplicity matters more than
+theoretical scalability. SQLite provides a single-file database with zero
+external dependencies, making deployment and testing straightforward. The
+sqlite-vec extension provides efficient vector similarity search with cosine
+distance, more than adequate for demo-scale workloads.
 
-This choice demonstrates a key engineering principle: choose the right solution for the problem scope. While PostgreSQL + pgvector would scale better, the operational complexity would distract from demonstrating core RAG concepts.
+This choice demonstrates a key engineering principle: choose the right solution
+for the problem scope. While PostgreSQL + pgvector would scale better, the
+operational complexity would distract from demonstrating core RAG concepts.
 
 ## Document Processing Pipeline
 
@@ -42,7 +67,9 @@ Building a robust document processing pipeline required solving several interest
 
 ### Challenge 1: Multi-Format Text Extraction
 
-Documents come in various formats, each requiring different extraction strategies. I implemented a modular `TextExtractor` service that handles PDF, TXT, DOCX, and Markdown files with proper error handling and fallbacks.
+Documents come in various formats, each requiring different extraction
+strategies. I implemented a modular `TextExtractor` service that handles PDF,
+TXT, DOCX, and Markdown files with proper error handling and fallbacks.
 
 ```ruby
 # app/services/document_processing/text_extractor.rb
@@ -67,13 +94,20 @@ end
 
 ### Challenge 2: Intelligent Text Chunking
 
-Simply splitting documents arbitrarily doesn't work well for RAG systems. Context preservation is crucial for accurate answers. I implemented a `TextChunker` that creates 800-token chunks with 200-token overlap while respecting paragraph boundaries.
+Simply splitting documents arbitrarily doesn't work well for RAG systems.
+Context preservation is crucial for accurate answers. I implemented a
+`TextChunker` that creates 800-token chunks with 200-token overlap while
+respecting paragraph boundaries.
 
-The overlap ensures that related context spans multiple chunks, while paragraph boundary preservation maintains semantic coherence. Token counting uses tiktoken_ruby for accuracy across different models.
+The overlap ensures that related context spans multiple chunks, while paragraph
+boundary preservation maintains semantic coherence. Token counting uses
+tiktoken_ruby for accuracy across different models.
 
 ### Challenge 3: Vector Similarity Implementation
 
-The `ChunkRetriever` service handles the core vector search functionality. It uses sqlite-vec's virtual tables for efficient similarity search with configurable thresholds:
+The `ChunkRetriever` service handles the core vector search functionality. It
+uses sqlite-vec's virtual tables for efficient similarity search with
+configurable thresholds:
 
 ```ruby
 # app/services/rag/chunk_retriever.rb
@@ -121,7 +155,9 @@ end
 
 ### Challenge 4: Background Job Architecture
 
-Document processing needs to happen asynchronously to avoid blocking user interactions. Rails 8's Solid Queue with in-process Puma integration provides the perfect balance of simplicity and functionality.
+Document processing needs to happen asynchronously to avoid blocking user
+interactions. Rails 8's Solid Queue with in-process Puma integration provides
+the perfect balance of simplicity and functionality.
 
 ```ruby
 # app/jobs/process_document_job.rb
@@ -158,15 +194,22 @@ class ProcessDocumentJob < ApplicationJob
 end
 ```
 
-The in-process approach eliminates the need for separate worker processes, significantly simplifying deployment while still providing reliable background job processing.
+The in-process approach eliminates the need for separate worker processes,
+significantly simplifying deployment while still providing reliable background
+job processing.
 
 ## Frontend Architecture: Vue.js 3 + Composition API
 
-The frontend needed to handle complex state management for chat interfaces while remaining responsive and maintainable. Vue.js 3's Composition API provides excellent patterns for organizing complex component logic.
+The frontend needed to handle complex state management for chat interfaces
+while remaining responsive and maintainable. Vue.js 3's Composition API
+provides excellent patterns for organizing complex component logic.
 
-The chat interface manages conversation state, message history, and real-time UI updates. Citations are interactive—clicking a citation highlights the source passage in the document viewer.
+The chat interface manages conversation state, message history, and real-time
+UI updates. Citations are interactive—clicking a citation highlights the source
+passage in the document viewer.
 
-State management uses Pinia for predictable updates and easy debugging. The component structure follows clear separation of concerns:
+State management uses Pinia for predictable updates and easy debugging. The
+component structure follows clear separation of concerns:
 
 ```javascript
 // ChatInterface.vue (simplified)
@@ -203,7 +246,9 @@ export default {
 
 ## Citation Extraction and Storage
 
-Making AI answers verifiable is crucial for user trust. I implemented structured citation extraction that captures source references alongside AI responses.
+Making AI answers verifiable is crucial for user trust. I implemented
+structured citation extraction that captures source references alongside AI
+responses.
 
 The `AnswerGenerator` service extracts citations from LLM responses and stores them in a structured format:
 
@@ -262,11 +307,14 @@ class Rag::AnswerGenerator
 end
 ```
 
-Citations are stored as JSON metadata in the messages table, enabling conversation replay and audit trails.
+Citations are stored as JSON metadata in the messages table, enabling
+conversation replay and audit trails.
 
 ## Production Deployment Strategy
 
-Deploying AI applications requires careful consideration of infrastructure, security, and operational concerns. I implemented a production-ready deployment strategy using Docker containers and Fly.io.
+Deploying AI applications requires careful consideration of infrastructure,
+security, and operational concerns. I implemented a production-ready deployment
+strategy using Docker containers and Fly.io.
 
 ### Container Architecture
 
@@ -312,7 +360,8 @@ The production deployment includes:
 
 ## Code Quality and Testing Approach
 
-Comprehensive testing ensures reliability and maintainability. The test suite covers all critical components:
+Comprehensive testing ensures reliability and maintainability. The test suite
+covers all critical components:
 
 ```ruby
 # RAG Pipeline Integration Test
@@ -360,7 +409,10 @@ Building Ragtime required making several important architectural decisions:
 **Rationale**: Deployment simplicity outweighs scalability concerns for a portfolio project
 **Trade-off**: Limited horizontal scalability vs zero operational overhead
 
-While PostgreSQL + pgvector would scale better and is production-standard for larger systems, sqlite-vec has proven somewhat finicky for implementation and maintenance. For demonstrating RAG concepts, the simplicity advantage was worth the scalability limitation.
+While PostgreSQL + pgvector would scale better and is production-standard for
+larger systems, sqlite-vec has proven somewhat finicky for implementation and
+maintenance. For demonstrating RAG concepts, the simplicity advantage was worth
+the scalability limitation.
 
 ### Background Jobs: Solid Queue vs Sidekiq
 
@@ -368,7 +420,9 @@ While PostgreSQL + pgvector would scale better and is production-standard for la
 **Rationale**: Rails 8 integration eliminates separate worker processes
 **Trade-off**: Less isolation vs simplified deployment
 
-This choice leverages Rails 8's new features while reducing operational complexity. For larger systems, dedicated Sidekiq workers would provide better isolation and monitoring.
+This choice leverages Rails 8's new features while reducing operational
+complexity. For larger systems, dedicated Sidekiq workers would provide better
+isolation and monitoring.
 
 ### Frontend: Vue.js vs Hotwire
 
@@ -376,7 +430,8 @@ This choice leverages Rails 8's new features while reducing operational complexi
 **Rationale**: Superior UX for chat interfaces with complex state management
 **Trade-off**: More complex setup vs Rails-native solution
 
-Vue.js provides better tools for managing conversation state, real-time updates, and interactive citations—critical for a good chat experience.
+Vue.js provides better tools for managing conversation state, real-time
+updates, and interactive citations—critical for a good chat experience.
 
 ## What I'd Do Differently at Scale
 
@@ -413,7 +468,8 @@ Building Ragtime provided valuable insights into modern AI application developme
 
 ## Conclusion
 
-Ragtime demonstrates how to build modern AI-powered applications with solid engineering practices. The system showcases:
+Ragtime demonstrates how to build modern AI-powered applications with solid
+engineering practices. The system showcases:
 
 - **System Architecture**: Clean separation of concerns with modern Rails 8 patterns
 - **AI Integration**: Practical RAG implementation with production considerations
@@ -421,10 +477,16 @@ Ragtime demonstrates how to build modern AI-powered applications with solid engi
 - **DevOps Practices**: Container deployment with operational awareness
 - **Code Quality**: Comprehensive testing and maintainable code organization
 
-More importantly, it shows how to make thoughtful technology decisions based on project constraints rather than simply following trends. Sometimes the right solution isn't the most complex one—it's the one that solves the actual problem efficiently and maintainably.
+More importantly, it shows how to make thoughtful technology decisions based on
+project constraints rather than simply following trends. Sometimes the right
+solution isn't the most complex one—it's the one that solves the actual problem
+efficiently and maintainably.
 
 **[Request Access to Live Demo](https://ragtime-demo.fly.dev)** - Password-protected demonstration
 **[View Source Code](https://github.com/grymoire7/ragtime)** - Complete implementation
 **[Portfolio & Contact](https://tracyatteberry.com/about)** - More projects and information
 
-This represents the technical leadership and engineering excellence I bring to every project—balancing technical sophistication with practical constraints to build solutions that actually work.
+This represents the technical leadership and engineering excellence I bring to
+every project—balancing technical sophistication with practical constraints to
+build solutions that actually work.
+
