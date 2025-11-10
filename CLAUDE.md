@@ -35,7 +35,7 @@ solid engineering practices and modern AI integration.
 - ✅ Integration tests for RAG pipeline (ChunkRetriever → PromptBuilder → AnswerGenerator)
 - ⏸️ Integration/E2E tests deferred (reasonable for portfolio scope)
 
-**Phase 8 In Progress** (Deployment and documentation):
+**Phase 8 Completed** (Deployment and documentation):
 - ✅ Multi-stage Dockerfile created with Nginx reverse proxy
 - ✅ Production Procfile and Rails configuration for containers
 - ✅ Docker Compose with production parity (single container)
@@ -56,12 +56,43 @@ solid engineering practices and modern AI integration.
 - ✅ Chat creation and Q&A with citations fully functional
 - ✅ ActionCable broadcast errors fixed (removed unused Turbo Streams)
 - ✅ Complete end-to-end flow verified in production container
-- ⚠️ **BLOCKER**: vec_chunks virtual table requires manual fix-vec-chunks after each container start
-- 🔄 Next: Automate vec_chunks initialization in docker-entrypoint, then deploy to Fly.io
+- ✅ sqlite-vec native extension deployment solved (automated in docker-entrypoint)
+- ✅ Root route (/) redirects to Vue app (works in production)
+- ✅ Created GitHub repository and pushed code (grymoire7/ragtime)
+- ✅ Added LICENSE (MIT)
+- ✅ Deployed to Fly.io (https://ragtime-docs.fly.dev/)
+  - App name: ragtime-docs
+  - Region: ord (Chicago)
+  - 1GB persistent volume for storage
+  - 512MB RAM, 1 shared CPU
+  - Auto-scaling enabled (min 0 machines)
+  - **Verified working**: Full end-to-end flow tested in production
+    - ✅ Authentication (login)
+    - ✅ Document upload and processing
+    - ✅ Q&A with accurate answers
+    - ✅ Citation extraction and display
+    - ✅ OpenAI integration (embeddings + chat)
+- 🔄 Write comprehensive README with portfolio audience in mind
+- 🔄 Create screenshots and/or GIFs showing key features
+- 🔄 Document deployment steps and architecture decisions in `docs/`
+- 🔄 Write technical blog post explaining design, architecture, and challenges
 
-**Next Phases**:
-- Phase 8: Complete deployment and documentation
-- Phase 9: Optional enhancements
+**Phase 9 In Progress** (Optional enhancements):
+- High priority:
+  - 🔄 Fix production routing issues
+    - if you reload while on the login screen you get 502 from nginx
+    - if you reload while on the primary app view you get a header and footer with no content
+  - Login page is too narrow on desktop - improve responsive design
+  - ✅ Replace vector dollar sign with piano symbol (🎹) as app icon, favicon, and chat avatar
+  - Advanced UI/UX polish
+  - Improve and debug `./script/` scripts
+- Low priority:
+  - Fix nginx config to preserve port in local redirects (X-Forwarded-Port header)
+  - ActionCable streaming for real-time responses
+  - Document preview or PDF viewer
+  - Export conversation history
+  - Advanced analytics (popular questions, document usage)
+  - Set cost limits and usage monitoring for AI API calls
 
 ## Technology Stack
 
@@ -432,15 +463,16 @@ Focus on getting core functionality working end-to-end before polish:
 6. **Then**: Polish, testing, and deployment (Phases 6-8)
 
 **Current Status**: Core RAG system is functional with authentication, citations, and interactive features.
-  Phase 6 complete. Phase 7 complete. Phase 8 deployment in progress.
+  Phase 6 complete. Phase 7 complete. Phase 8 complete. Phase 9 in progress.
 
 **Tests**: Comprehensive test suite (222 specs passing) covering core functionality and RAG pipeline.
   sqlite-vec limitations required careful test design. We unit test with rspec.
 
 **Critical Path**: Working demo that's deployable and interview-ready ✅
-**In Progress**: Cross-platform Docker testing and Fly.io deployment (Phase 8)
-**Next**: Complete deployment and documentation (Phase 8)
-**Nice-to-Have**: Streaming (Phase 9), advanced features, extensive test coverage
+**Deployed**: Live at https://ragtime-docs.fly.dev/ (Phase 8 complete)
+**In Progress**: Production routing fixes and UI polish (Phase 9)
+**Next**: Fix page reload routing issues, continue documentation
+**Nice-to-Have**: Streaming, advanced features, extensive test coverage
 
 ## Resources
 
