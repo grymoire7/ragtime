@@ -30,7 +30,8 @@ RSpec.describe "RAG Pipeline Integration", type: :integration do
       - Backend: Rails 8 API
       - Database: SQLite with vector extensions
       - Frontend: Vue.js 3
-      - LLM: Anthropic Claude
+      - LLM Chat: OpenAI gpt-4o-mini
+      - LLM Embeddings: OpenAI text-embedding-3-small
     TEXT
   end
 

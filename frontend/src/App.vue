@@ -31,7 +31,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>Built with Rails 8 & Vue 3 • Powered by Anthropic Claude</p>
+      <p>Built with Rails 8 & Vue 3 • Powered by OpenAI</p>
     </footer>
   </div>
 </template>

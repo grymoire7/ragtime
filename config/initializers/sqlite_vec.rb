@@ -17,12 +17,28 @@ ActiveSupport.on_load(:active_record) do
           # Enable extension loading temporarily
           @raw_connection.enable_load_extension(true)
 
-          # Load extension using absolute path since sqlite-vec gem uses relative path
-          # SqliteVec.loadable_path returns "/path/to/lib/vec0", need to add ".so"
-          extension_path = SqliteVec.loadable_path + '.so'
-          @raw_connection.load_extension(extension_path)
+          # Try different extensions based on platform
+          # macOS uses .dylib, Linux uses .so
+          base_path = SqliteVec.loadable_path
+          extensions = ['.dylib', '.so', '']
+
+          loaded = false
+          extensions.each do |ext|
+            begin
+              @raw_connection.load_extension(base_path + ext)
+              loaded = true
+              break
+            rescue SQLite3::SQLException
+              # Try next extension
+              next
+            end
+          end
 
           @raw_connection.enable_load_extension(false)
+
+          unless loaded
+            raise "Could not load sqlite-vec extension from #{base_path}"
+          end
 
           Rails.logger.info "sqlite-vec extension loaded successfully" if defined?(Rails.logger)
         rescue => e
