@@ -6,19 +6,19 @@ import { useAuth } from '../composables/useAuth';
 
 const routes = [
   {
-    path: 'login',  // Relative path when using base
+    path: '/login',  // Absolute path - base is prepended automatically
     name: 'login',
     component: LoginView,
     meta: { requiresAuth: false }
   },
   {
-    path: '',  // Empty string for root when using base
+    path: '/',  // Root path - base is prepended automatically
     name: 'home',
     component: ChatView,
     meta: { requiresAuth: true }
   },
   {
-    path: 'documents/:id',  // Relative path when using base
+    path: '/documents/:id',  // Absolute path - base is prepended automatically
     name: 'document-detail',
     component: DocumentDetailView,
     props: true,
