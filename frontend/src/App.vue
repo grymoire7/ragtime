@@ -101,7 +101,8 @@ body {
   filter: drop-shadow(0 0 8px rgba(244, 162, 97, 0.4));
 }
 
-.header-link:hover h1 {
+.header-link:hover h1,
+.header-link:hover .subtitle {
   color: #f4a261;
 }
 
