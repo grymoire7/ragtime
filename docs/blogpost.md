@@ -16,12 +16,18 @@ trade-offs that show how to build these systems from the ground up.
 At its core, Ragtime is a RAG (Retrieval-Augmented Generation) system with a
 clean, modern architecture:
 
-```
-Vue.js Frontend ←→ Rails 8 API ←→ SQLite + sqlite-vec
-                    ↓
-              Solid Queue Jobs
-                    ↓
-              OpenAI APIs
+```mermaid
+flowchart TD
+    A[Vue.js Frontend] <--> B[Rails 8 API]
+    B <--> C[SQLite + sqlite-vec]
+    B --> D[Solid Queue Jobs]
+    D --> E[OpenAI APIs]
+
+    style A fill:#41B883,stroke:#333,stroke-width:2px
+    style B fill:#CC0000,stroke:#333,stroke-width:2px
+    style C fill:#003B57,stroke:#333,stroke-width:2px
+    style D fill:#6F42C1,stroke:#333,stroke-width:2px
+    style E fill:#412991,stroke:#333,stroke-width:2px
 ```
 
 The system processes documents through a pipeline: text extraction →
