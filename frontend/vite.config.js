@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/frontend/',  // Set base path for production deployment
   plugins: [vue()],
   server: {
     port: 5173,
