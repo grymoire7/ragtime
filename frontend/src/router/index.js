@@ -6,19 +6,19 @@ import { useAuth } from '../composables/useAuth';
 
 const routes = [
   {
-    path: '/login',
+    path: 'login',  // Relative path when using base
     name: 'login',
     component: LoginView,
     meta: { requiresAuth: false }
   },
   {
-    path: '/',
+    path: '',  // Empty string for root when using base
     name: 'home',
     component: ChatView,
     meta: { requiresAuth: true }
   },
   {
-    path: '/documents/:id',
+    path: 'documents/:id',  // Relative path when using base
     name: 'document-detail',
     component: DocumentDetailView,
     props: true,
