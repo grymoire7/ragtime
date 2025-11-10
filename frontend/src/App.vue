@@ -4,9 +4,7 @@
       <div class="header-content">
         <router-link to="/" class="header-link">
           <h1>
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <span class="logo-icon">🎹</span>
             Ragtime
           </h1>
           <p class="subtitle">Document Q&A System</p>
@@ -95,12 +93,16 @@ body {
   text-decoration: none;
   color: inherit;
   display: block;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 .header-link:hover {
-  opacity: 0.9;
   cursor: pointer;
+  filter: drop-shadow(0 0 8px rgba(244, 162, 97, 0.4));
+}
+
+.header-link:hover h1 {
+  color: #f4a261;
 }
 
 .logout-btn {
@@ -141,9 +143,9 @@ body {
 }
 
 .logo-icon {
-  width: 48px;
-  height: 48px;
-  stroke-width: 2;
+  font-size: 48px;
+  line-height: 1;
+  display: inline-block;
 }
 
 .subtitle {
