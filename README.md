@@ -187,6 +187,16 @@ This is a portfolio project demonstrating professional development practices. Wh
 - Production deployment practices
 - Professional documentation standards
 
+## 🤖 AI acknowledgment
+
+Some portions of this project were assisted by AI tools for code generation and
+documentation. All code and content have been reviewed and refined to ensure
+quality and accuracy. This project was not "vibe coded" by AI; it reflects
+professional development skills and practices. Claude Code was used with both
+Sonnet and GLM models. See [blog post](https://tracyatteberry.com/blog/ragtime)
+for more details about my challenges and learnings while using AI with this
+project.
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
