@@ -2,8 +2,11 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>🎹 Ragtime</h1>
-        <p class="tagline">Document Q&A System</p>
+        <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke-width="2"></path>
+        </svg>
+        <h2>Password Required</h2>
       </div>
 
       <form @submit.prevent="handleLogin" class="login-form">
@@ -75,12 +78,12 @@ async function handleLogin() {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 180px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1rem;
+  padding: 2rem 1rem;
 }
 
 .login-card {
@@ -102,21 +105,24 @@ async function handleLogin() {
 .login-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 2.5rem 2rem 2rem;
+  padding: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-.login-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.5rem;
-  font-weight: 700;
+.lock-icon {
+  width: 48px;
+  height: 48px;
+  stroke-width: 2;
 }
 
-.tagline {
+.login-header h2 {
   margin: 0;
-  font-size: 1rem;
-  opacity: 0.95;
-  font-weight: 400;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .login-form {
