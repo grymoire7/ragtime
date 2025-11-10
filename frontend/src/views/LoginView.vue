@@ -39,7 +39,9 @@
       </form>
 
       <div class="login-footer">
-        <p>This is a portfolio project by Tracy. Password available upon request.</p>
+        <p>This is a portfolio project by <a
+          href="https://tracyatteberry.com/portfolio" target="_blank">Tracy
+          Atteberry</a>. Password available upon request.</p>
         <p class="contact-hint">Potential employers: Check your email or contact me for access.</p>
       </div>
     </div>

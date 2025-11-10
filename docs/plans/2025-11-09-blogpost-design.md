@@ -1,6 +1,6 @@
 # Blogpost Design Document
 
-**Date**: 2025-01-09
+**Date**: 2025-11-09
 **Project**: Ragtime - Document Q&A System
 **Target Audience**: Technical Hiring Managers (Senior Software Developer position)
 **Purpose**: Technical portfolio piece demonstrating senior-level engineering skills
@@ -16,10 +16,8 @@
 
 ## Working Titles
 
-- "Building a Production-Ready RAG System with Rails 8: A Senior Engineer's Approach"
-- "From Document Upload to AI-Powered Q&A: Architecting a Modern RAG System"
-- "Rails 8 + AI: How I Built a Document Q&A System That Demonstrates Senior-Level Technical Skills"
-- "Senior-Level Software Engineering: Building a RAG System from Architecture to Deployment"
+- "Building a document Q&A system with Rails 8, SQLite-vec, and OpenAI" (top choice)
+- "Building a RAG System from Architecture to Deployment" (second choice)
 
 ## Blogpost Structure
 
@@ -41,6 +39,8 @@
 - Technology selection and trade-off analysis
 - Production deployment and operations
 - Code quality and testing methodologies
+- AI systems integration and knowledge of vector search
+  - Claude: Knowledge of AI technologies if very desirable for senior roles these days.
 
 ### 2. The Architecture: Senior-Level System Design
 
@@ -77,7 +77,7 @@ Vue.js Frontend ←→ Rails 8 API ←→ SQLite + sqlite-vec
 ### 3. Technical Challenges & Senior-Level Solutions
 
 **Challenge 1: Document Processing Pipeline**
-- Problem: Converting diverse formats (PDF, DOCX, TXT) to searchable text
+- Problem: Converting diverse formats (PDF, DOCX, TXT, MD) to searchable text
 - Solution: Modular TextExtractor service with error handling
 - Senior thinking: Extensibility for new formats, failure recovery
 
@@ -109,9 +109,9 @@ Vue.js Frontend ←→ Rails 8 API ←→ SQLite + sqlite-vec
 - Mock strategies for external APIs (OpenAI)
 - Edge case handling: malformed documents, API failures, empty results
 
-**Code Organization Examples**
+**Code Organization**
 ```
-# Show actual code examples here
+# Show high-level code organization here, though we can assume some knmowledge of Rails conventions
 app/services/rag/chunk_retriever.rb - Clean service interface
 app/services/document_processing/ - Modular pipeline
 app/jobs/ - Background job patterns
@@ -159,6 +159,10 @@ Persistent Volumes  Health Checks   Background Jobs  Active Storage
 - Performance monitoring setup
 
 ### 6. Senior-Level Trade-off Analysis
+Claude: In general, we should avoid the term "senior thinking" or
+  "senior-level". We can just say "Rationale" or "Considerations".
+  We want to _demonstrate_ senior-level thinking through the content,
+  not call it out explicitly all the time.
 
 **Technology Selection Matrix**
 
@@ -185,6 +189,7 @@ Persistent Volumes  Health Checks   Background Jobs  Active Storage
 
 **What I'd Do Differently at Scale**
 - Move to PostgreSQL + pgvector for larger datasets
+  - While SQLite can scale to moderate sizes, the sqlite-vec extension has proven to be somewhat finicky for implementation and maintenance.
 - Separate background job workers for better isolation
 - CDN for static assets
 - Proper monitoring stack (Prometheus, Grafana)
@@ -226,8 +231,10 @@ Persistent Volumes  Health Checks   Background Jobs  Active Storage
 
 **Call to Action for Hiring Managers**
 - Link to live demo: [Demo URL]
-- GitHub repository: [Repo URL]
-- Resume and contact information
+  - Claude: Mention that password is required.
+- GitHub repository: https://github.com/grymoire7/ragtime
+- Resume and contact information: https://tracyatteberry.com/about
+- Link to portfolio website: https://tracyatteberry.com/portfolio
 - "This is a sample of the technical leadership and engineering excellence I would bring to your team"
 
 ## Code Snippets to Include
@@ -270,6 +277,6 @@ Persistent Volumes  Health Checks   Background Jobs  Active Storage
 ## Publication Strategy
 
 - Target audience: Technical hiring managers, engineering leaders
-- Platform choices: LinkedIn, technical blogs, portfolio website
+- Platform choices: LinkedIn, technical blogs, personal/portfolio website
 - Cross-posting strategy to maximize reach
 - Follow-up content ideas (deeper dives on specific topics)
