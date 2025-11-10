@@ -153,17 +153,21 @@ finish early, streaming is a great polish feature.
     - ✅ Q&A with accurate answers
     - ✅ Citation extraction and display
     - ✅ OpenAI integration (embeddings + chat)
-- Write comprehensive README with portfolio audience in mind
+- 🔄 Write comprehensive README with portfolio audience in mind
 - Create screenshots and/or GIFs showing key features
 - Document deployment steps and architecture decisions in `docs/`
   - Reference `docs/README.md` in github README
-- Write technical blog post explaining design, architecture, and challenges
+- 🔄 Write technical blog post explaining design, architecture, and challenges
+  - Draft at docs/blogpost.md
   - Reference blog post in github README
 
 **Phase 9: Optional enhancements** (if time permits)
 - High priority:
+  - Fix production routing issues
+    - if you reload while on the login screen you get 502 from nginx
+    - if you reload while on the primary app view you get a header and footer with no content
   - Login page is too narrow on desktop - improve responsive design
-  - Replace vector dollar sign with piano symbol (🎹) as app icon, favicon, and chat avatar
+  - ✅ Replace vector dollar sign with piano symbol (🎹) as app icon, favicon, and chat avatar
   - Advanced UI/UX polish
   - Improve and debug `./script/` scripts
 - Low priority:
