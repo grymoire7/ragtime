@@ -21,19 +21,18 @@ claude: >
 
 # Building a document Q&A system with Rails 8, SQLite-vec, and OpenAI
 
-Every company wants to plug AI into their proprietary data. But here's the
-thing—it's not just about calling an API. The real challenge is building
-systems that actually work reliably and are maintainable in the real world.
+Every company wants to plug AI into their proprietary data. The challenge isn't
+just calling an API. It's building systems that work reliably and stay
+maintainable in the real world.
 
 So I built Ragtime. Think of it as my playground for figuring out how to build
 modern AI applications the right way. It's a document Q&A system where you can
 upload PDFs, Word docs, text files, and Markdown, then ask questions and get
 answers with actual source citations.
 
-What I really wanted to show wasn't just that I can build an AI app—anyone can
-do that these days. I wanted to demonstrate how a senior engineer thinks about
-building these systems from the ground up, making smart trade-offs and avoiding
-common pitfalls.
+This wasn't just about building another AI app. I wanted to demonstrate how a
+senior engineer approaches building these systems from the ground up, making
+smart trade-offs and avoiding common pitfalls.
 
 <figure style="margin-top: 15px">
   <img src="password_access.png" width="75%" alt="Password protected demo login screen" />
@@ -44,8 +43,8 @@ common pitfalls.
 ## Architecture overview
 
 So what does Ragtime actually look like under the hood? At its core, it's a RAG
-(Retrieval-Augmented Generation) system—fancy talk for "find relevant material,
-then use it to answer questions."
+(Retrieval-Augmented Generation) system. In simple terms: find relevant
+material, then use it to answer questions.
 
 ```mermaid
 flowchart TD
@@ -61,11 +60,11 @@ flowchart TD
     style E fill:#412991,stroke:#333,stroke-width:2px
 ```
 
-Here's how it works: you upload a document, the system pulls out the text,
+Here's how it works: you upload a document, the system extracts the text,
 chops it into smart chunks, turns those chunks into mathematical vectors (more
-on that in a bit), and then when you ask a question, it finds the most relevant
+on that in a bit), then when you ask a question, it finds the most relevant
 chunks and uses them to generate an answer with citations. Simple, right? Well,
-there are some fun challenges along the way.
+there are some interesting challenges along the way.
 
 ### Why this architecture?
 
@@ -77,9 +76,12 @@ Going API-only gave me this clean separation between frontend and backend,
 which makes everything easier to maintain and reason about.
 
 For the frontend, Vue.js 3 with the Composition API just feels right for chat
-interfaces. You get way better state management than server-rendered options,
-and the component-based architecture makes complex UI stuff like real-time chat
-and interactive citations so much easier to build.
+interfaces. You get better state management than server-rendered options,
+and the component-based architecture makes complex UI like real-time chat
+and interactive citations much easier to build.
+
+With the architecture decided, let's talk about one of the most critical
+technology choices.
 
 ## The vector storage decision: SQLite + sqlite-vec
 
@@ -90,23 +92,29 @@ those vector embeddings. I looked at three options:
 2. **Dedicated vector databases** (like Pinecone or Weaviate): The fancy specialized solutions
 3. **SQLite + sqlite-vec**: The simple, "just make it work" approach
 
-I went with SQLite + sqlite-vec, and I have to be honest—it was way more
-complicated than I expected. Here's my thinking: when you're trying to show
-engineering competence, deployment simplicity matters more than theoretical
-scalability. But sqlite-vec turned out to be a significant engineering challenge
-in its own right.
+I went with SQLite + sqlite-vec, and it was more complicated than expected.
+My thinking was: when showing engineering competence, deployment simplicity
+matters more than theoretical scalability. But sqlite-vec became a significant
+engineering challenge.
 
-The extension doesn't just work out of the box. I had to:
+The extension doesn't work out of the box. I had to:
 - Bootstrap it manually in the docker-entrypoint for production
 - Load it programmatically in code rather than declaring it in database.yml
 - Add special verification in health check endpoints because if it fails to load,
   the entire RAG functionality breaks
 - Turn off transactional fixtures in tests and create custom test support code
 
-While SQLite gives you that single-file, zero-dependency promise, getting
-sqlite-vec to work reliably required significant effort. This really highlights a
-key engineering principle: sometimes the "simple" choice brings its own complex
-challenges that you need to account for.
+This highlights a key engineering principle: sometimes the "simple" choice brings
+its own complex challenges. The good news is that Rails 8 ships with SQLite
+optimizations that can handle 50K concurrent users and up to 50K writes/sec,
+making SQLite a legitimate choice for production scale.
+
+So while SQLite gives you that single-file, zero-dependency promise, getting
+sqlite-vec to work reliably required significant effort. But the payoff is
+deployment simplicity that's hard to beat.
+
+With storage sorted out, the next challenge was actually processing all those
+documents.
 
 ## Document processing pipeline
 
@@ -116,31 +124,38 @@ solving some pretty fun challenges:
 ### Challenge 1: Getting text out of different file types
 
 First problem: documents come in all shapes and sizes. PDFs, Word docs, plain
-text, Markdown—each one needs its own special handling trick. I ended up
-building a `TextExtractor` service that's basically a Swiss Army knife for file
-formats. It knows how to handle each type, and when things go wrong (which they
-always do), it fails gracefully and tells you what happened.
+text, Markdown—each needs its own special handling. I built a `TextExtractor`
+service that handles each type gracefully:
 
 ```ruby
-# app/services/document_processing/text_extractor.rb
-class DocumentProcessing::TextExtractor
-  def self.extract(file)
-    case file.content_type
-    when 'application/pdf'
-      PdfReader.new(file).extract_text
-    when 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      DocxReader.new(file).extract_text
-    when 'text/plain', 'text/markdown'
-      file.download
-    else
-      raise "Unsupported file type: #{file.content_type}"
+# app/services/document_processing/text_extractor.rb (simplified)
+module DocumentProcessing
+  class TextExtractor
+    def self.extract(document)
+      new(document).extract
     end
-  rescue => error
-    Rails.logger.error "Text extraction failed: #{error.message}"
-    raise DocumentProcessing::ExtractionError, "Failed to extract text from document"
+
+    def extract
+      case @document.content_type
+      when "application/pdf"
+        extract_from_pdf
+      when "text/plain", "text/markdown"
+        extract_from_text_file
+      when "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        extract_from_docx
+      else
+        raise UnsupportedFormatError, "Unsupported document format"
+      end
+    end
   end
 end
 ```
+
+*Note: Code simplified for readability. Actual implementation includes robust
+error handling, UTF-8 validation, and detailed logging.*
+
+The pattern here is simple: try each format, fail gracefully with useful error
+messages. This makes debugging much easier when users upload problematic files.
 
 ### Challenge 2: Splitting text intelligently
 
@@ -161,53 +176,52 @@ affects chunk quality.
 ### Challenge 3: Implementing vector similarity search
 
 The `ChunkRetriever` handles the core vector search functionality. It generates
-embeddings for queries and uses sqlite-vec's virtual tables to find the most
-similar chunks. The challenge here was tuning the similarity threshold—too low
-and you get irrelevant results, too high and you get no results at all.
+embeddings for queries and uses sqlite-vec's virtual tables to find similar
+chunks. The challenge was tuning the similarity threshold—too low and you get
+irrelevant results, too high and you get no results.
+
+Here's the actual implementation using L2 distance:
 
 ```ruby
-# app/services/rag/chunk_retriever.rb
-class Rag::ChunkRetriever
-  DEFAULT_THRESHOLD = 1.2 # L2 distance, tuned for quality results
-  DEFAULT_LIMIT = 5
+# app/services/rag/chunk_retriever.rb (simplified)
+module Rag
+  class ChunkRetriever
+    DEFAULT_DISTANCE_THRESHOLD = 1.2 # L2 distance, tuned for quality results
+    DEFAULT_LIMIT = 5
 
-  def initialize(query:, threshold: DEFAULT_THRESHOLD, limit: DEFAULT_LIMIT)
-    @query = query
-    @threshold = threshold
-    @limit = limit
-  end
+    def self.retrieve(query, limit: DEFAULT_LIMIT,
+                      distance_threshold: DEFAULT_DISTANCE_THRESHOLD)
+      new.retrieve(query, limit: limit,
+                   distance_threshold: distance_threshold)
+    end
 
-  def call
-    # Generate embedding for query
-    query_embedding = EmbeddingGenerator.generate(@query)
+    def retrieve(query, limit: DEFAULT_LIMIT,
+                 distance_threshold: DEFAULT_DISTANCE_THRESHOLD)
+      return [] if query.blank?
 
-    # Vector similarity search using sqlite-vec
-    chunks = execute_vector_search(query_embedding)
+      query_embedding = generate_query_embedding(query)
+      return [] if query_embedding.nil?
 
-    # Convert to domain objects with metadata
-    chunks.map { |chunk| ChunkResult.new(chunk) }
-  end
+      # Search for similar chunks using the Chunk model
+      results = Chunk.search_similar(
+        query_embedding,
+        limit: limit,
+        distance_threshold: distance_threshold
+      )
 
-  private
-
-  def execute_vector_search(embedding)
-    sql = <<-SQL
-      SELECT chunks.*, vec_distance_cosine(chunks.embedding, ?) as distance
-      FROM vec_chunks
-      JOIN chunks ON vec_chunks.rowid = chunks.id
-      WHERE vec_distance_cosine(chunks.embedding, ?) < ?
-      ORDER BY distance
-      LIMIT ?
-    SQL
-
-    sanitized_sql = ActiveRecord::Base.sanitize_sql_array([
-      sql, embedding, embedding, @threshold, @limit
-    ])
-
-    ActiveRecord::Base.connection.execute(sanitized_sql)
+      format_results(results)
+    end
   end
 end
 ```
+
+*Note: Code simplified for readability. Actual implementation includes document
+filtering, date filtering, and comprehensive error handling.*
+
+The key insight was using L2 distance with a threshold around 1.2. This gives
+good balance between relevance and result quantity for most queries. The actual
+search happens in the Chunk model, which handles the sqlite-vec virtual table
+operations.
 
 ### Challenge 4: Background job processing
 
@@ -215,48 +229,54 @@ Document processing is computationally expensive—text extraction, chunking, an
 embedding generation can take significant time. This work needs to happen
 asynchronously to avoid blocking user interactions.
 
-Rails 8's Solid Queue with the Puma integration was an excellent choice for
-this use case. No separate worker processes to manage—everything runs in the
-background while keeping the app responsive. The in-process approach simplifies
-deployment significantly.
+Rails 8's Solid Queue with Puma integration was perfect for this. No separate
+worker processes to manage—everything runs in-process while keeping the app
+responsive. The in-process approach simplifies deployment significantly.
+
+Here's the complete processing pipeline:
 
 ```ruby
-# app/jobs/process_document_job.rb
+# app/jobs/process_document_job.rb (simplified)
 class ProcessDocumentJob < ApplicationJob
-  retry_on StandardError, wait: :exponentially_longer, attempts: 3
-
-  def perform(document)
+  def perform(document_id)
+    document = Document.find(document_id)
     document.update!(status: :processing)
 
     # Extract text content
-    text_content = DocumentProcessing::TextExtractor.extract(document.file)
+    text = DocumentProcessing::TextExtractor.extract(document)
 
     # Create chunks with overlap
-    chunks = DocumentProcessing::TextChunker.chunk(text_content)
+    chunk_data = DocumentProcessing::TextChunker.chunk(text)
 
-    # Generate embeddings in batches
-    embeddings = EmbeddingGenerator.generate_batch(chunks.map(&:content))
+    # Generate embeddings for all chunks
+    chunk_texts = chunk_data.map { |c| c[:text] }
+    embeddings = DocumentProcessing::EmbeddingGenerator.generate_batch(chunk_texts)
 
     # Store chunks with embeddings
-    chunks.each_with_index do |chunk, index|
+    chunk_data.each_with_index do |chunk_info, index|
       document.chunks.create!(
-        content: chunk[:content],
-        position: chunk[:position],
-        token_count: chunk[:token_count],
+        content: chunk_info[:text],
+        position: index,
+        token_count: chunk_info[:token_count],
         embedding: embeddings[index]
       )
     end
 
-    document.update!(status: :completed)
-  rescue => error
-    document.update!(status: :failed, error_message: error.message)
+    document.update!(status: :completed, processed_at: Time.current)
+  rescue => e
+    document.update!(status: :failed, error_message: e.message)
     raise
   end
 end
 ```
 
-This in-process approach means way less deployment headache while still giving
-you reliable background job processing. Sometimes simpler really is better.
+*Note: Code simplified for readability. Actual implementation includes
+comprehensive error handling, empty content validation, and detailed logging.*
+
+This in-process approach means less deployment headache while still giving
+reliable background job processing. Sometimes simpler really is better.
+
+With the backend pipeline solid, let's look at building the user interface.
 
 ## Frontend architecture: Vue.js 3 + Composition API
 
@@ -264,118 +284,116 @@ Building a chat interface that doesn't feel clunky is surprisingly hard. You
 need to manage conversation state, message history, real-time updates... it
 gets complicated fast.
 
-Vue.js 3's Composition API turned out to be perfect for this. It gives you
-these clean patterns for organizing complex component logic without everything
-turning into spaghetti code. The chat interface keeps track of the
-conversation, shows you messages as they come in, and makes citations
-clickable—click one and it'll highlight the exact passage in the document.
+Vue.js 3's Composition API was perfect for this. It provides clean patterns for
+organizing complex component logic without everything turning into spaghetti code.
+The chat interface tracks conversations, displays messages in real-time, and makes
+citations clickable—click one and it highlights the exact passage in the document.
 
-I used Pinia for state management because it makes debugging so much easier,
-and the whole component structure follows that separation of concerns principle
-that keeps you sane when the app gets complex.
+I used direct API calls instead of a state management library. This keeps the
+implementation simple and focused. The component structure follows separation
+of concerns principles that keep the code maintainable.
+
+Here's the core chat interface implementation:
 
 ```javascript
 // ChatInterface.vue (simplified)
-import { ref, computed, onMounted } from 'vue'
-import { useChatStore } from '@/stores/chat'
+<script setup>
+import { ref, nextTick } from 'vue'
+import { chatsAPI } from '../services/api'
 
-export default {
-  setup() {
-    const chatStore = useChatStore()
-    const message = ref('')
-    const loading = ref(false)
+const currentChat = ref(null)
+const messages = ref([])
+const messageInput = ref('')
+const sending = ref(false)
 
-    const sendMessage = async () => {
-      if (!message.value.trim()) return
+async function sendMessage() {
+  if (!messageInput.value.trim() || sending.value) return
 
-      loading.value = true
-      try {
-        await chatStore.sendMessage(message.value)
-        message.value = ''
-      } finally {
-        loading.value = false
-      }
-    }
+  const content = messageInput.value.trim()
+  messageInput.value = ''
 
-    return {
-      message,
-      loading,
-      currentChat: computed(() => chatStore.currentChat),
-      sendMessage
-    }
+  // Add user message to UI immediately
+  messages.value.push({
+    id: `temp-${Date.now()}`,
+    role: 'user',
+    content: content,
+    created_at: new Date().toISOString()
+  })
+
+  sending.value = true
+
+  try {
+    // Send message to API
+    await chatsAPI.sendMessage(currentChat.value.id, content)
+
+    // Poll for response since processing is async
+    pollForResponse()
+  } catch (err) {
+    error.value = 'Failed to send message. Please try again.'
+    sending.value = false
   }
 }
+</script>
 ```
+
+*Note: Code simplified for readability. Actual implementation includes
+comprehensive error handling, polling for responses, and rich UI components.*
+
+The pattern here keeps components focused: handle UI state, use direct API calls
+instead of stores, and maintain clear data flow. This makes the chat experience
+feel responsive and professional.
 
 ## Citation extraction and storage
 
-Here's something that drives me crazy about some AI apps: you get these
-confident-sounding answers but have no idea where they came from. That's
-terrible for user trust.
+Here's what drives me crazy about some AI apps: confident answers with no source
+information. That's terrible for user trust.
 
-So I made sure every answer comes with citations. The `AnswerGenerator` service
-basically tells the AI "hey, when you answer this, tell me exactly which chunks
-you used" and stores all that in a nice structured format. This way users can
-actually verify the answers, which is huge for building trust.
+I made sure every answer includes citations. The `AnswerGenerator` service tells
+the AI to return exactly which chunks were used and stores everything in a
+structured format. Users can verify answers, which builds trust.
+
+Here's how the answer generation and citation extraction works:
 
 ```ruby
-# app/services/rag/answer_generator.rb
-class Rag::AnswerGenerator
-  def initialize(context:, question:)
-    @context = context
-    @question = question
-  end
+# app/services/rag/answer_generator.rb (simplified)
+module Rag
+  class AnswerGenerator
+    def self.generate(question, options = {})
+      new.generate(question, options)
+    end
 
-  def call
-    response = ruby_llm.chat(
-      messages: build_prompt,
-      temperature: 0.3, # Lower temperature for more consistent responses
-      response_format: { type: "json_object" }
-    )
+    def generate(question, options = {})
+      # Retrieve relevant chunks using vector search
+      chunks_data = ChunkRetriever.retrieve(question, **options)
 
-    parse_response(response)
-  end
+      # Build prompt with retrieved context
+      prompt = PromptBuilder.build(question, chunks_data)
 
-  private
+      # Generate answer using LLM
+      answer = call_llm(prompt, model)
 
-  def build_prompt
-    PromptBuilder.new(
-      context: @context,
-      question: @question,
-      citation_format: "structured_json"
-    ).build
-  end
+      # Format citations with metadata
+      citations = format_citations(chunks_data)
 
-  def parse_response(response)
-    data = JSON.parse(response.content)
-
-    AnswerResult.new(
-      content: data['answer'],
-      citations: build_citations(data['citations'] || []),
-      metadata: {
-        model: response.model,
-        usage: response.usage
-      }
-    )
-  end
-
-  def build_citations(citation_data)
-    citation_data.map do |citation|
+      # Return structured response with answer and citations
       {
-        chunk_id: citation['chunk_id'],
-        document_id: citation['document_id'],
-        document_title: citation['document_title'],
-        relevance: citation['relevance_score'],
-        position: citation['position_in_document']
+        answer: answer,
+        citations: citations,
+        model: model
       }
     end
   end
 end
 ```
 
-All those citations get stored as JSON in the messages table, which means you
-can replay conversations later and see exactly how the AI arrived at its
-answers. Pretty handy for debugging and audit trails.
+*Note: Code simplified for readability. Actual implementation includes empty
+context handling, citation filtering/renumbering, and comprehensive error handling.*
+
+All citations are stored as JSON in the messages table, letting you replay
+conversations and see exactly how the AI arrived at its answers. This is crucial
+for debugging and audit trails.
+
+With core functionality complete, let's talk about getting this into production.
 
 ## Production deployment strategy
 
@@ -440,43 +458,38 @@ interesting. But comprehensive testing is still absolutely crucial.
 The test suite covers all the important bits:
 
 ```ruby
-# RAG Pipeline Integration Test
+# RAG Pipeline Integration Test (simplified)
 RSpec.describe "RAG Pipeline Integration", type: :request do
   it "processes document and answers question with citations" do
     # Upload document
     document = create_document_with_file("sample.pdf")
 
     # Process document through pipeline
-    ProcessDocumentJob.perform_now(document)
+    ProcessDocumentJob.perform_now(document.id)
     expect(document.reload.status).to eq("completed")
     expect(document.chunks.count).to be > 0
 
-    # Ask question
-    retriever = Rag::ChunkRetriever.new(query: "What is the main topic?")
-    chunks = retriever.call
+    # Ask question and get answer
+    answer = Rag::AnswerGenerator.generate("What is the main topic?")
 
-    # Generate answer
-    generator = Rag::AnswerGenerator.new(
-      context: chunks,
-      question: "What is the main topic?"
-    )
-    answer = generator.call
-
-    expect(answer.content).not_to be_empty
-    expect(answer.citations).not_to be_empty
-    expect(answer.citations.first[:document_id]).to eq(document.id)
+    expect(answer[:answer]).not_to be_empty
+    expect(answer[:citations]).not_to be_empty
+    expect(answer[:citations].first[:document_id]).to eq(document.id)
   end
 end
 ```
 
-Right now I've got 222 passing tests, including:
+*Note: Code simplified for readability. Actual test includes more comprehensive
+assertions and edge case testing.*
+
+I've got over 220 passing tests, including:
 - Unit tests for all the services and models
 - Integration tests that test the whole RAG pipeline end-to-end
 - API endpoint tests for every controller
 - Frontend component tests for the Vue.js interfaces
 
-That many tests might seem like overkill for a portfolio project, but when
-you're dealing with AI systems, you need all the confidence you can get.
+That many tests might seem like overkill for a portfolio project, but with
+nondeterministic AI systems, you need all the confidence you can get.
 
 ## Key technical trade-offs
 
@@ -488,26 +501,23 @@ Building Ragtime meant making some interesting calls. Here are the big ones:
 - **Why**: Rails 8's SQLite optimizations make production-scale deployment viable
 - **The trade-off**: Native extension complexity vs single-container deployment simplicity
 
-Here's something that might surprise you: Rails 8 ships with SQLite optimizations
-that can handle 50K concurrent users and up to 50K writes/sec. That's legitimate
-production scale that completely changes the old assumption that SQLite is just
-for small apps.
+Rails 8 ships with SQLite optimizations that handle 50K concurrent users and up
+to 50K writes/sec. That's legitimate production scale that changes the old
+assumption that SQLite is just for small apps.
 
-The real challenge wasn't SQLite itself—it was the sqlite-vec extension. That
-required significant engineering effort to make work reliably—manual
-bootstrapping, custom test support, health check verification. But with Rails 8's
-improvements, choosing SQLite for production is actually a defensible decision
-for many use cases.
+The real challenge was the sqlite-vec extension, which required significant
+engineering effort to work reliably. But with Rails 8's improvements, SQLite
+is a defensible choice for many production use cases.
 
 ### Background jobs: Solid Queue vs Sidekiq
 
 - **What I chose**: Solid Queue with in-process Puma integration
 - **Why**: Rails 8 integration means no separate worker processes to manage
-- **The trade-off**: Less isolation vs way simpler deployment
+- **The trade-off**: Less isolation vs simpler deployment
 
-This leverages Rails 8's new features while cutting down on operational
-complexity. If this were a bigger system, I'd probably go with dedicated
-Sidekiq workers for better isolation and monitoring.
+This leverages Rails 8's new features while cutting operational complexity. For
+larger systems, dedicated Sidekiq workers would provide better isolation and
+monitoring.
 
 ### Frontend: Vue.js vs Hotwire
 
@@ -521,36 +531,39 @@ doesn't feel clunky.
 
 ## What I'd do differently at scale
 
-Ragtime is perfectly suited for its purpose as a portfolio project that
-demonstrates solid engineering and trade-offs. But if I were building this for
-different production scenarios? Some decisions might change:
+Ragtime works perfectly as a portfolio project demonstrating solid engineering
+and trade-offs. But for different production scenarios, some decisions might
+change:
 
-1. **Vector extension**: For really large scale, I'd evaluate pgvector for its mature ecosystem, but with Rails 8's SQLite improvements, SQLite remains viable for many production workloads
-2. **Background jobs**: Dedicated Sidekiq workers for better isolation and monitoring at larger scale
+1. **Vector extension**: For large scale, I'd evaluate pgvector for its mature
+   ecosystem, but Rails 8's SQLite improvements keep SQLite viable for many
+   production workloads
+2. **Background jobs**: Dedicated Sidekiq workers for better isolation and
+   monitoring at larger scale
 3. **Asset serving**: CDN integration for static assets
-4. **Monitoring**: Full observability stack with Prometheus, Grafana, and proper alerting
+4. **Monitoring**: Full observability stack with Prometheus, Grafana, and alerting
 5. **Caching**: Redis for frequent queries and expensive operations
 6. **Security**: Zero-trust architecture with proper API rate limiting
 
-The key is knowing when to optimize for simplicity and when to optimize for
-scale—and with Rails 8, that scale threshold is higher than most people think.
+The key is knowing when to optimize for simplicity vs scale. With Rails 8,
+that scale threshold is higher than most people think.
 
 ## Lessons learned
 
 Building Ragtime provided valuable insights into modern AI application development:
 
 **Technical learnings**
-- sqlite-vec is not plug-and-play—it requires significant bootstrapping and error handling
-- Rails 8 features significantly improve developer experience for API applications
-- Vector similarity tuning is crucial for RAG quality—threshold selection requires testing and iteration
+- sqlite-vec requires significant bootstrapping and error handling—it's not plug-and-play
+- Rails 8 features improve developer experience for API applications
+- Vector similarity tuning is crucial for RAG quality—threshold selection needs testing
 - Container cross-platform builds require careful dependency management
-- Native extensions in production containers need special handling and verification
+- Native extensions in production containers need special handling
 
 **Process learnings**
-- Comprehensive test coverage is essential for AI systems with nondeterministic outputs
+- Comprehensive test coverage is essential for nondeterministic AI systems
 - Documentation as a design tool prevents over-engineering
 - Simple deployment strategies accelerate iteration and learning
-- Error boundaries and graceful degradation are non-negotiable for production AI systems
+- Error boundaries and graceful degradation are non-negotiable for production
 
 **Architecture insights**
 - Modularity enables testing and iteration on complex pipelines
@@ -560,7 +573,7 @@ Building Ragtime provided valuable insights into modern AI application developme
 
 ## Conclusion
 
-Ragtime demonstrates how to build modern AI-powered applications with solid engineering practices. The system showcases:
+Ragtime demonstrates building modern AI applications with solid engineering practices. The system showcases:
 
 - **System architecture**: Clean separation of concerns with modern Rails 8 patterns
 - **AI integration**: Practical RAG implementation with production considerations
@@ -568,9 +581,9 @@ Ragtime demonstrates how to build modern AI-powered applications with solid engi
 - **DevOps practices**: Container deployment with operational awareness
 - **Code quality**: Comprehensive testing and maintainable code organization
 
-More importantly, it shows how to make thoughtful technology decisions based on
-project constraints rather than simply following trends. Sometimes the right
-solution isn't the most complex one—it's the one that solves the actual problem
+Most importantly, it shows making thoughtful technology decisions based on
+project constraints rather than following trends. The right solution isn't
+always the most complex—it's the one that solves the actual problem
 efficiently and maintainably.
 
 **[Request access to live demo](https://ragtime-demo.fly.dev)** - Password-protected demo
