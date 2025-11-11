@@ -35,6 +35,12 @@ do that these days. I wanted to demonstrate how a senior engineer thinks about
 building these systems from the ground up, making smart trade-offs and avoiding
 common pitfalls.
 
+<figure style="margin-top: 15px">
+  <img src="password_access.png" width="75%" alt="Password protected demo login screen" />
+  <figcaption>Password protected demo login screen</figcaption>
+</figure>
+
+
 ## Architecture overview
 
 So what does Ragtime actually look like under the hood? At its core, it's a RAG
@@ -478,9 +484,9 @@ Building Ragtime meant making some interesting calls. Here are the big ones:
 
 ### SQLite vs PostgreSQL for vector storage
 
-**What I chose**: SQLite + sqlite-vec
-**Why**: Rails 8's SQLite optimizations make production-scale deployment viable
-**The trade-off**: Native extension complexity vs single-container deployment simplicity
+- **What I chose**: SQLite + sqlite-vec
+- **Why**: Rails 8's SQLite optimizations make production-scale deployment viable
+- **The trade-off**: Native extension complexity vs single-container deployment simplicity
 
 Here's something that might surprise you: Rails 8 ships with SQLite optimizations
 that can handle 50K concurrent users and up to 50K writes/sec. That's legitimate
@@ -495,9 +501,9 @@ for many use cases.
 
 ### Background jobs: Solid Queue vs Sidekiq
 
-**What I chose**: Solid Queue with in-process Puma integration
-**Why**: Rails 8 integration means no separate worker processes to manage
-**The trade-off**: Less isolation vs way simpler deployment
+- **What I chose**: Solid Queue with in-process Puma integration
+- **Why**: Rails 8 integration means no separate worker processes to manage
+- **The trade-off**: Less isolation vs way simpler deployment
 
 This leverages Rails 8's new features while cutting down on operational
 complexity. If this were a bigger system, I'd probably go with dedicated
@@ -505,9 +511,9 @@ Sidekiq workers for better isolation and monitoring.
 
 ### Frontend: Vue.js vs Hotwire
 
-**What I chose**: Vue.js SPA
-**Why**: Better UX for chat interfaces with complex state management
-**The trade-off**: More complex setup vs staying within the Rails ecosystem
+- **What I chose**: Vue.js SPA
+- **Why**: Better UX for chat interfaces with complex state management
+- **The trade-off**: More complex setup vs staying within the Rails ecosystem
 
 Vue.js gives you better tools for managing conversation state, real-time
 updates, and interactive citations—all critical for a chat experience that
