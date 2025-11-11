@@ -57,6 +57,17 @@ if [[ "$*" == *"foreman"* ]]; then
     SQL
 
     puts "✅ vec_chunks table created successfully"
+    puts ""
+    puts "📦 Repopulating vec_chunks from existing chunks..."
+
+    # Repopulate vec_chunks with embeddings from existing chunks
+    count = 0
+    Chunk.where.not(embedding: nil).find_each do |chunk|
+      chunk.send(:insert_into_vec_table)
+      count += 1
+    end
+
+    puts "✅ Repopulated #{count} chunks into vec_chunks"
   ' 2>&1 | grep -v "sqlite-vec extension loaded" || true
 
   # Seed models (idempotent - safe to run multiple times)
