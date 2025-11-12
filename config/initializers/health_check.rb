@@ -1,14 +1,9 @@
 # Health check endpoint for container deployment
 # This initializer adds a simple health check endpoint that returns "OK"
 
-Rails.application.configure do
-  # Add health check route after routes are initialized
-  config.after_initialize do
-    Rails.application.routes.draw do
-      get 'health', to: lambda { |_env| [200, { 'Content-Type' => 'text/plain' }, ['OK']] }
-    end
-  end
-end
+# Note: Health check endpoint is handled by Nginx at docker/nginx-production.conf:21-25
+# This provides instant responses without Rails overhead for production health checks
+# Rails built-in health check is available at /up if needed for deeper app monitoring
 
 # Verify sqlite-vec extension loads correctly in production
 # Skip during asset precompilation to avoid dependency issues in Docker
