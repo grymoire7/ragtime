@@ -1,10 +1,64 @@
 #!/bin/bash
 # Build and run the local Ragtime Docker container
-# Usage: script/rebuild-and-run
+# Usage: script/rebuild-and-run [--help]
 
 set -e
 
+# Show help message
+show_help() {
+  cat << EOF
+🔨🚀 Ragtime Rebuild and Run Script
+
+Build and run the local Ragtime Docker container in one command.
+
+USAGE:
+  script/rebuild-and-run [OPTIONS]
+
+OPTIONS:
+  --help, -h    Show this help message
+
+EXAMPLE:
+  script/rebuild-and-run
+
+The script will:
+  1. Stop and remove any existing 'ragtime-test' container
+  2. Build a fresh Docker image (with cache)
+  3. Start the container with production environment
+  4. Access the application at http://localhost:8080
+
+This is a convenience script that combines:
+  script/remove-container
+  script/build-local
+  script/run-local
+
+REQUIREMENTS:
+  - config/credentials/production.key must exist
+  - Docker must be running
+  - Sufficient disk space for container build
+
+For more control, run the individual scripts separately.
+EOF
+}
+
+# Parse arguments
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
 echo "🔨🚀 Building and running Ragtime container..."
+
+echo "Step 0: Stop and remove existing container..."
+script/remove-container
 
 # Build the container
 echo "Step 1: Building container..."

@@ -1,0 +1,59 @@
+#!/bin/bash
+# Stop and remove the local Docker container for Ragtime
+# Usage: script/remove-container [--help]
+
+set -e
+
+# Show help message
+show_help() {
+  cat << EOF
+🗑️ Ragtime Container Removal Script
+
+Stop and remove the local Ragtime Docker container.
+
+USAGE:
+  script/remove-container [OPTIONS]
+
+OPTIONS:
+  --help, -h    Show this help message
+
+EXAMPLE:
+  script/remove-container
+
+The script will:
+  1. Stop the 'ragtime-test' container if running
+  2. Remove the container completely
+  3. Free up the container name and port 8080
+
+This is useful when you want to:
+  - Start a fresh container instance
+  - Free up system resources
+  - Rebuild with changes
+
+NOTES:
+  - Container data in volumes will persist
+  - Only affects local 'ragtime-test' container
+  - Safe to run even if container doesn't exist
+EOF
+}
+
+# Parse arguments
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+echo "🗑️ Stopping and removing Ragtime Docker container for local testing..."
+
+docker stop ragtime-test && docker rm ragtime-test
+
+
