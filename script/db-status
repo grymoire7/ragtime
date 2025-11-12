@@ -1,17 +1,87 @@
 #!/bin/bash
 # Show database status and counts
-# Usage: script/db-status
+# Usage: script/db-status [--help]
 
 set -e
 
 CONTAINER_NAME="ragtime-test"
 
+# Show help message
+show_help() {
+  cat << EOF
+📊 Ragtime Database Status Script
+
+Show comprehensive database status and counts from the container.
+
+USAGE:
+  script/db-status [OPTIONS]
+
+OPTIONS:
+  --help, -h    Show this help message
+
+OUTPUT INCLUDES:
+  📁 Documents
+    - Total, completed, pending, failed counts
+    - Recent documents with status emojis
+
+  🧩 Chunks
+    - Total chunk count
+    - vec_chunks virtual table sync status
+    - Embedding dimensions
+    - Mismatch warnings if needed
+
+  💬 Chats & Messages
+    - Chat and message counts
+    - User vs assistant message breakdown
+    - Messages with citations
+
+  🤖 Models
+    - Available model count
+    - List of first 3 models
+
+  ⚙️ Configuration
+    - Environment (production/development)
+    - Default chat and embedding models
+
+STATUS EMOJIS:
+    ✅ Completed  ⏳ Pending  ❌ Failed  ❓ Unknown
+
+REQUIREMENTS:
+  - Container 'ragtime-test' must be running
+  - Database must be accessible
+
+TROUBLESHOOTING:
+  - If vec_chunks mismatch: run script/fix-vec-chunks
+  - If container not running: run script/run-local
+EOF
+}
+
 # Check if container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "❌ Container '${CONTAINER_NAME}' is not running"
-  echo "Start it with: script/run-local"
-  exit 1
-fi
+check_container() {
+  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "❌ Container '${CONTAINER_NAME}' is not running"
+    echo "Start it with: script/run-local"
+    exit 1
+  fi
+}
+
+# Parse arguments
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Check if container is running
+check_container
 
 echo "📊 Ragtime Database Status"
 echo "=========================="

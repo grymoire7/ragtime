@@ -1,17 +1,53 @@
 #!/bin/bash
 # Build the local Docker container for Ragtime
-# Usage: script/build-local [--no-cache]
+# Usage: script/build-local [--no-cache] [--help]
 
 set -e
 
-echo "🔨 Building Ragtime Docker container for local testing..."
+# Show help message
+show_help() {
+  cat << EOF
+🔨 Ragtime Docker Build Script
 
-# Check for --no-cache flag
+Build the Ragtime Docker container for local testing.
+
+USAGE:
+  script/build-local [OPTIONS]
+
+OPTIONS:
+  --no-cache    Build without using Docker cache (forces clean rebuild)
+  --help, -h    Show this help message
+
+EXAMPLES:
+  script/build-local           # Normal build with cache
+  script/build-local --no-cache # Force clean rebuild
+
+The container will be tagged as 'ragtime:latest' and built for
+linux/amd64 platform to ensure compatibility across environments.
+EOF
+}
+
+# Parse arguments
 BUILD_ARGS="--platform linux/amd64 --load -t ragtime:latest"
-if [[ "$*" == *"--no-cache"* ]]; then
-  echo "🗑️  Building without cache..."
-  BUILD_ARGS="$BUILD_ARGS --no-cache"
-fi
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    --no-cache)
+      echo "🗑️  Building without cache..."
+      BUILD_ARGS="$BUILD_ARGS --no-cache"
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+echo "🔨 Building Ragtime Docker container for local testing..."
 
 # Build the container with proper platform for local testing
 docker-buildx build $BUILD_ARGS .

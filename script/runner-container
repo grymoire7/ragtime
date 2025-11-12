@@ -1,18 +1,70 @@
 #!/bin/bash
 # Run Rails code in the production container
-# Usage: script/runner-container 'Model.count'
-# Usage: script/runner-container < script.rb
+# Usage: script/runner-container [OPTIONS] ['CODE'|<script.rb]
 
 set -e
 
 CONTAINER_NAME="ragtime-test"
 
+# Show help message
+show_help() {
+  cat << EOF
+🏃 Ragtime Container Runner Script
+
+Execute Ruby/Rails code inside the running Ragtime container.
+
+USAGE:
+  script/runner-container [OPTIONS] ['CODE']
+  script/runner-container [OPTIONS] < script.rb
+
+OPTIONS:
+  --help, -h    Show this help message
+
+EXAMPLES:
+  script/runner-container 'puts Document.count'
+  script/runner-container 'Document.all.each { |d| puts d.title }'
+  echo 'puts Model.pluck(:model_id)' | script/runner-container
+
+FEATURES:
+  - Execute single-line Ruby code in quotes
+  - Pipe Ruby scripts from files or echo
+  - Full Rails environment available
+  - Automatically filters sqlite-vec noise
+  - Access to all models, services, and utilities
+
+REQUIREMENTS:
+  - Container 'ragtime-test' must be running
+  - Valid Ruby/Rails syntax
+
+NOTES:
+  - Use single quotes for Ruby code to avoid shell expansion
+  - All output is shown except "sqlite-vec extension loaded" messages
+  - Container uses production environment
+EOF
+}
+
 # Check if container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "❌ Container '${CONTAINER_NAME}' is not running"
-  echo "Start it with: script/run-local"
-  exit 1
-fi
+check_container() {
+  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "❌ Container '${CONTAINER_NAME}' is not running"
+    echo "Start it with: script/run-local"
+    exit 1
+  fi
+}
+
+# Parse arguments
+SHOW_HELP=false
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+  esac
+done
+
+# Check if container is running
+check_container
 
 # If stdin is a pipe/file, read from it
 if [ ! -t 0 ]; then
@@ -20,8 +72,11 @@ if [ ! -t 0 ]; then
 else
   CODE="$1"
   if [ -z "$CODE" ]; then
+    echo "❌ No Ruby code provided"
+    echo ""
     echo "Usage: script/runner-container 'Ruby.code.here'"
     echo "   Or: script/runner-container < script.rb"
+    echo "   Or: script/runner-container --help"
     exit 1
   fi
 fi

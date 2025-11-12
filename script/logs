@@ -1,54 +1,110 @@
 #!/bin/bash
 # View container logs with smart filtering
-# Usage: script/logs                    # Last 50 lines
-# Usage: script/logs --errors           # Show only errors
-# Usage: script/logs --jobs             # Show job activity
-# Usage: script/logs --follow           # Follow logs in real-time
-# Usage: script/logs --tail 100         # Last 100 lines
-# Usage: script/logs "search pattern"   # Grep for pattern
+# Usage: script/logs [OPTIONS] [PATTERN]
 
 set -e
 
 CONTAINER_NAME="ragtime-test"
 
-# Check if container exists
-if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "❌ Container '${CONTAINER_NAME}' does not exist"
-  echo "Build it with: script/build-local && script/run-local"
-  exit 1
-fi
+# Show help message
+show_help() {
+  cat << EOF
+📋 Ragtime Container Logs Script
 
-# Default options
-TAIL_LINES=50
-FOLLOW=false
-PATTERN=""
+View container logs with smart filtering capabilities.
+
+USAGE:
+  script/logs [OPTIONS] [PATTERN]
+
+OPTIONS:
+  --errors           Show only error messages and exceptions
+  --jobs             Show ActiveJob and background job activity
+  --follow, -f       Follow logs in real-time (like tail -f)
+  --tail N           Show last N lines (default: 50)
+  --help, -h         Show this help message
+
+PATTERNS:
+  Any other argument is treated as a grep pattern to search logs
+
+EXAMPLES:
+  script/logs                    # Last 50 lines
+  script/logs --errors           # Show only errors
+  script/logs --jobs             # Show job activity
+  script/logs --follow           # Follow logs in real-time
+  script/logs --tail 100         # Last 100 lines
+  script/logs "ChatResponse"     # Grep for pattern
+  script/logs --errors --follow  # Follow error logs only
+
+FILTERS:
+  --errors searches for: Error|ERROR|error|Exception|EXCEPTION|Failed|FAILED
+  --jobs searches for: ActiveJob|ProcessDocumentJob|ChatResponseJob|Performing|Enqueued
+
+The script automatically filters out "sqlite-vec extension loaded" messages
+for cleaner output.
+EOF
+}
+
+# Check if container exists
+check_container() {
+  if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "❌ Container '${CONTAINER_NAME}' does not exist"
+    echo "Build it with: script/build-local && script/run-local"
+    exit 1
+  fi
+}
 
 # Parse arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --errors)
-      PATTERN="Error|ERROR|error|Exception|EXCEPTION|Failed|FAILED"
-      shift
-      ;;
-    --jobs)
-      PATTERN="ActiveJob|ProcessDocumentJob|ChatResponseJob|Performing|Enqueued"
-      shift
-      ;;
-    --follow|-f)
-      FOLLOW=true
-      shift
-      ;;
-    --tail)
-      TAIL_LINES="$2"
-      shift 2
-      ;;
-    *)
-      # Treat as grep pattern
-      PATTERN="$1"
-      shift
-      ;;
-  esac
-done
+parse_args() {
+  # Default options
+  TAIL_LINES=50
+  FOLLOW=false
+  PATTERN=""
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --help|-h)
+        show_help
+        exit 0
+        ;;
+      --errors)
+        PATTERN="Error|ERROR|error|Exception|EXCEPTION|Failed|FAILED"
+        shift
+        ;;
+      --jobs)
+        PATTERN="ActiveJob|ProcessDocumentJob|ChatResponseJob|Performing|Enqueued"
+        shift
+        ;;
+      --follow|-f)
+        FOLLOW=true
+        shift
+        ;;
+      --tail)
+        if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+          TAIL_LINES="$2"
+          shift 2
+        else
+          echo "❌ --tail requires a numeric argument"
+          echo "Example: script/logs --tail 100"
+          exit 1
+        fi
+        ;;
+      *)
+        # Treat as grep pattern
+        if [ -n "$PATTERN" ]; then
+          echo "❌ Cannot specify multiple search patterns"
+          echo "Use only one pattern or option at a time"
+          exit 1
+        fi
+        PATTERN="$1"
+        shift
+        ;;
+    esac
+  done
+}
+
+# Main execution
+check_container
+parse_args "$@"
 
 # Build command
 if [ "$FOLLOW" = true ]; then

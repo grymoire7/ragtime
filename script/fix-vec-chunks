@@ -1,20 +1,85 @@
 #!/bin/bash
 # Fix corrupted vec_chunks virtual table
 # This happens when migrations partially fail, leaving orphaned shadow tables
-# Usage: script/fix-vec-chunks
+# Usage: script/fix-vec-chunks [--help]
 
 set -e
 
 CONTAINER_NAME="ragtime-test"
 
-echo "🔧 Fixing vec_chunks virtual table in container..."
+# Show help message
+show_help() {
+  cat << EOF
+🔧 Ragtime Vec Chunks Fix Script
+
+Fix corrupted vec_chunks virtual table in the container.
+
+USAGE:
+  script/fix-vec-chunks [OPTIONS]
+
+OPTIONS:
+  --help, -h    Show this help message
+
+PROBLEM:
+  This script fixes sqlite-vec virtual table corruption that occurs when:
+  - Migrations partially fail
+  - Orphaned shadow tables exist
+  - You see "no such table: vec_chunks" errors
+
+SOLUTION:
+  The script will:
+  1. Drop all vec_chunks related tables (shadow tables)
+  2. Create a fresh vec_chunks virtual table with 1536 dimensions
+  3. Verify the table is ready for use
+
+TABLES DROPPED:
+  - vec_chunks
+  - vec_chunks_info
+  - vec_chunks_data
+  - vec_chunks_config
+  - vec_chunks_chunks
+  - vec_chunks_rowids
+  - vec_chunks_vector_chunks00
+
+REQUIREMENTS:
+  - Container 'ragtime-test' must be running
+  - Database must be accessible
+
+NOTES:
+  - This is safe to run - it only affects vector search
+  - Regular data (documents, chunks) remain intact
+  - You may need to reprocess documents after running this
+EOF
+}
 
 # Check if container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  echo "❌ Container '${CONTAINER_NAME}' is not running"
-  echo "Start it with: script/run-local"
-  exit 1
-fi
+check_container() {
+  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "❌ Container '${CONTAINER_NAME}' is not running"
+    echo "Start it with: script/run-local"
+    exit 1
+  fi
+}
+
+# Parse arguments
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Check if container is running
+check_container
+
+echo "🔧 Fixing vec_chunks virtual table in container..."
 
 # Run the fix
 docker exec "$CONTAINER_NAME" bin/rails runner '

@@ -1,8 +1,57 @@
 #!/bin/bash
 # Run the local Ragtime Docker container
-# Usage: script/run-local
+# Usage: script/run-local [--help]
 
 set -e
+
+# Show help message
+show_help() {
+  cat << EOF
+🚀 Ragtime Docker Run Script
+
+Start the Ragtime Docker container locally on port 8080.
+
+USAGE:
+  script/run-local [OPTIONS]
+
+OPTIONS:
+  --help, -h    Show this help message
+
+REQUIREMENTS:
+  - config/credentials/production.key must exist
+  - Docker must be running
+
+EXAMPLE:
+  script/run-local
+
+The script will:
+  1. Verify production credentials exist
+  2. Remove any existing 'ragtime-test' container
+  3. Start a new container with production environment
+  4. Map port 8080:80 for web access
+  5. Set RAILS_MASTER_KEY from credentials file
+
+ACCESS:
+  Application: http://localhost:8080
+  Container logs: docker logs ragtime-test
+  Stop container: docker stop ragtime-test
+EOF
+}
+
+# Parse arguments
+for arg in "$@"; do
+  case $arg in
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "❌ Unknown option: $arg"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
 
 echo "🚀 Starting Ragtime container for local testing..."
 
