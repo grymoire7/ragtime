@@ -17,8 +17,8 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 
 **[Request access to live demo](https://ragtime-demo.fly.dev)** - Production-deployed and ready for review
 
-> **Note**: The demo requires password authentication for security. This is a
-> portfolio project demonstrating production-ready development practices.
+> **Note**: The demo is hosted by fly.io and requires password authentication
+> for security. If you would like access, please contact me or my referring recruiter.
 
 ## 🛠 Tech stack
 
@@ -37,33 +37,37 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 - **Docker** multi-stage containerization
 - **Nginx** reverse proxy in production
 - **Fly.io** deployment with persistent volumes
-- **222 passing tests** with comprehensive coverage
+- **Over 220 passing tests** with comprehensive coverage
 
 ## 📸 Screenshots
 
 ### Main Interface
-![Main Interface](docs/images/appview.png)
+![Main Interface](docs/images/appview.png)<br/>
 *Ragtime's main interface - upload documents, ask questions, get cited answers*
 
-![Document Chat Interface](docs/images/document_chat.png)
+![Document Chat Interface](docs/images/document_chat.png)<br/
 *Ragtime's document chat interface - ask questions, get cited answers*
 
 ### Interactive Citations
-![Citation Demo](docs/images/citations.png)
+![Citation Demo](docs/images/citations.png)<br/
 *Click citations to view source passages in document context*
 
 ### Password Authentication
-![Mobile View](docs/images/password_access.png)
+![Mobile View](docs/images/password_access.png)<br/
 *Password authentication for secure access to the demo*
 
 ## ⚡ Quick Start
 
-### One-command Docker setup
+### Run with Docker
+
+The Docker setup was tested on both Apple M3 (local) and Linux x64 (Fly.io).
+
 ```bash
 git clone https://github.com/grymoire7/ragtime.git
 cd ragtime
 ./script/rebuild-and-run
 ```
+
 Visit http://localhost:8080 to access the application.
 
 ### Manual development setup
@@ -125,7 +129,7 @@ flowchart TD
 ### Key components
 
 **Backend services**
-- `ChunkRetriever`: Vector similarity search with cosine distance
+- `ChunkRetriever`: Vector similarity search with L2 distance
 - `PromptBuilder`: RAG prompt construction with document context
 - `AnswerGenerator`: LLM integration with structured citation extraction
 - `TextChunker`: Intelligent document chunking (800 tokens, 200 overlap)
@@ -142,15 +146,15 @@ flowchart TD
 
 | Decision | Rationale |
 |----------|-----------|
-| SQLite + sqlite-vec vs PostgreSQL + pgvector | Simplified deployment, single file, appropriate for demo scale |
-| Rails 8 API vs monolith | Clean separation, modern frontend stack, API-first design |
-| Vue.js SPA vs Hotwire | Better UX for chat interface, modern JavaScript skills |
-| Solid Queue in-process vs Sidekiq | Deployment simplicity, Rails 8 integration |
-| Single container vs microservices | Faster deployment, appropriate for project scope |
+| SQLite + sqlite-vec **vs** PostgreSQL + pgvector | Simplified deployment, single file, appropriate for demo scale |
+| Rails 8 API **vs** monolith | Clean separation, modern frontend stack, API-first design |
+| Vue.js SPA **vs** Hotwire | Better UX for chat interface, modern JavaScript skills |
+| Solid Queue in-process **vs** Sidekiq | Deployment simplicity, Rails 8 integration |
+| Single container **vs** microservices | Faster deployment, appropriate for project scope |
 
 ## 🧪 Testing
 
-- **222 passing specs** with comprehensive test coverage
+- **Over 220 passing specs** with comprehensive test coverage
 - **Unit tests** for all models and services
 - **Integration tests** for complete RAG pipeline
 - **API endpoint testing** for all controller actions
