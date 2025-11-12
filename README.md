@@ -62,13 +62,38 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 
 The Docker setup was tested on both Apple M3 (local) and Linux x64 (Fly.io).
 
+**Prerequisites**
+- Docker installed locally
+- Production credentials configured (see below)
+
+**Setup credentials**
+The application requires Rails credentials to be configured before running:
+
 ```bash
+# Clone the repository
 git clone https://github.com/grymoire7/ragtime.git
 cd ragtime
+
+# Edit production credentials (required)
+bin/rails credentials:edit --environment production
+```
+
+Add the following required credentials to `config/credentials/production.yml.enc`:
+
+```yaml
+# Required for application authentication
+site_password: your-secure-password-here
+
+# Required for AI functionality (production)
+openai_api_key: sk-proj-your-openai-api-key-here
+```
+
+**Run the container**
+```bash
 ./script/rebuild-and-run
 ```
 
-Visit http://localhost:8080 to access the application.
+Visit http://localhost:8080 to access the application. The password will be the `site_password` you configured above.
 
 ### Manual development setup
 
