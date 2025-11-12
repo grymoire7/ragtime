@@ -1,4 +1,4 @@
-# Ragtime: Document Q&A System
+# 🎹 Ragtime: Document Q&A System
 
 ![Tests](https://img.shields.io/badge/tests-222%20passing-brightgreen) ![Rails 8](https://img.shields.io/badge/rails-8.0.3-red) ![Vue.js](https://img.shields.io/badge/vue.js-3.x-green) ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -42,16 +42,19 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 ## 📸 Screenshots
 
 ### Main Interface
-![Main Interface](docs/screenshots/main-interface.png)
+![Main Interface](docs/images/appview.png)
 *Ragtime's main interface - upload documents, ask questions, get cited answers*
 
+![Document Chat Interface](docs/images/document_chat.png)
+*Ragtime's document chat interface - ask questions, get cited answers*
+
 ### Interactive Citations
-![Citation Demo](docs/screenshots/citation-demo.png)
+![Citation Demo](docs/images/citations.png)
 *Click citations to view source passages in document context*
 
-### Mobile Responsive
-![Mobile View](docs/screenshots/mobile-view.png)
-*Responsive design that works on all devices*
+### Password Authentication
+![Mobile View](docs/images/password_access.png)
+*Password authentication for secure access to the demo*
 
 ## ⚡ Quick Start
 
