@@ -42,18 +42,18 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 ## 📸 Screenshots
 
 ### Main Interface
-![Main Interface](docs/images/appview.png)<br/>
+![Main Interface](docs/images/appview.png)<br>
 *Ragtime's main interface - upload documents, ask questions, get cited answers*
 
-![Document Chat Interface](docs/images/document_chat.png)<br/
+![Document Chat Interface](docs/images/document_chat.png)<br>
 *Ragtime's document chat interface - ask questions, get cited answers*
 
 ### Interactive Citations
-![Citation Demo](docs/images/citations.png)<br/
+![Citation Demo](docs/images/citations.png)<br>
 *Click citations to view source passages in document context*
 
 ### Password Authentication
-![Mobile View](docs/images/password_access.png)<br/
+![Mobile View](docs/images/password_access.png)<br>
 *Password authentication for secure access to the demo*
 
 ## ⚡ Quick Start
