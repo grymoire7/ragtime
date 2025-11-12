@@ -158,8 +158,67 @@ def show_access_info!
   puts "\n" + blue("=" * 60)
 end
 
+# Show help message
+def show_help
+  puts blue("🐳 Ragtime Local Production Setup Script")
+  puts blue("===========================================")
+  puts "\nUsage: script/setup-local [OPTIONS]"
+  puts "\nOPTIONS:"
+  puts "  --help, -h    Show this help message"
+  puts "\nDESCRIPTION:"
+  puts "  Sets up and runs Ragtime in production mode locally using Docker Compose."
+  puts "  This is different from the single-container approach used by other scripts."
+  puts "\nENVIRONMENT:"
+  puts "  • Production Rails environment"
+  puts "  • Persistent volumes for data, storage, and logs"
+  puts "  • Docker Compose orchestration"
+  puts "\nPREREQUISITES:"
+  puts "  • Docker and Docker Compose installed"
+  puts "  • config/credentials/production.key exists"
+  puts "  • Sufficient system resources for containers"
+  puts "\nWHAT IT DOES:"
+  puts "  1. Checks Docker and Docker Compose availability"
+  puts "  2. Verifies RAILS_MASTER_KEY configuration"
+  puts "  3. Builds Docker image with production optimizations"
+  puts "  4. Starts containers with persistent volumes"
+  puts "  5. Waits for application health check"
+  puts "  6. Shows access information and useful commands"
+  puts "\nPERSISTENT VOLUMES:"
+  puts "  • ragtime-production-db - Database data"
+  puts "  • ragtime-production-storage - Uploaded files"
+  puts "  • ragtime-production-log - Application logs"
+  puts "\nDIFFERENCE FROM OTHER SCRIPTS:"
+  puts "  • Uses Docker Compose vs single container"
+  puts "  • Production-grade setup with volumes"
+  puts "  • More robust for long-term local development"
+  puts "  • Different port configuration (port 80 vs 8080)"
+  puts "\nSEE ALSO:"
+  puts "  • script/build-local - Build single container"
+  puts "  • script/run-local - Run single container"
+  puts "  • script/rebuild-and-run - Quick container rebuild"
+  puts "\nAUTHOR:"
+  puts "  Ragtime Development Team"
+end
+
+# Parse command line arguments
+def parse_args
+  ARGV.each do |arg|
+    case arg
+    when "--help", "-h"
+      show_help
+      exit 0
+    else
+      puts red("❌ Unknown option: #{arg}")
+      puts "Use --help for usage information"
+      exit 1
+    end
+  end
+end
+
 # Main execution
 FileUtils.chdir APP_ROOT do
+  parse_args
+
   puts blue("🐳 Ragtime Local Production Setup")
   puts blue("=====================================")
 
