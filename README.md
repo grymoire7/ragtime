@@ -187,7 +187,7 @@ flowchart TD
 
 ## 📖 Documentation
 
-- **[Blog post](https://tracyatteberry.com/blog/ragtime)** - Deep dive into architecture and technical decisions
+- **[Blog post](https://tracyatteberry.com/posts/ragtime)** - Deep dive into architecture and technical decisions
 - **[Portfolio](https://tracyatteberry.com/portfolio)** - Other projects and experience
 - **[About](https://tracyatteberry.com/about)** - Background and contact information
 
