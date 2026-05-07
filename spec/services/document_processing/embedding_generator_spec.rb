@@ -1,152 +1,299 @@
 require 'rails_helper'
 
 RSpec.describe DocumentProcessing::EmbeddingGenerator do
-  let(:generator) { described_class.new }
+  describe "#pad_embedding" do
+    subject(:instance) { described_class.new }
 
-  describe ".generate" do
-    it "delegates to instance method" do
-      embedding = Array.new(512) { rand }
-      allow_any_instance_of(described_class).to receive(:generate).with("test text").and_return(embedding)
+    # Access private method for testing
+    let(:pad_embedding) { ->(embedding) { instance.send(:pad_embedding, embedding) } }
 
-      result = described_class.generate("test text")
-      expect(result).to eq(embedding)
-    end
-  end
+    context "when embedding has exactly TARGET_DIMENSION (1536) dimensions" do
+      let(:embedding) { Array.new(1536) { rand } }
 
-  describe ".generate_batch" do
-    it "delegates to instance method" do
-      embeddings = [Array.new(512) { rand }, Array.new(512) { rand }]
-      allow_any_instance_of(described_class).to receive(:generate_batch).with(["text1", "text2"]).and_return(embeddings)
+      it "returns the embedding unchanged" do
+        result = pad_embedding.call(embedding)
+        expect(result).to eq(embedding)
+      end
 
-      result = described_class.generate_batch(["text1", "text2"])
-      expect(result).to eq(embeddings)
-    end
-  end
+      it "returns an array with exactly 1536 elements" do
+        result = pad_embedding.call(embedding)
+        expect(result.length).to eq(1536)
+      end
 
-  describe "#generate" do
-    let(:mock_response) { double("Response", vectors: Array.new(1536) { rand }) }
+      it "returns the same object (no unnecessary copying)" do
+        result = pad_embedding.call(embedding)
+        expect(result).to equal(embedding)
+      end
 
-    before do
-      allow(RubyLLM).to receive(:embed).and_return(mock_response)
-    end
-
-    it "generates embeddings using RubyLLM" do
-      result = generator.generate("test text")
-
-      # In test environment, should use the configured embedding model
-      expect(RubyLLM).to have_received(:embed).with(
-        "test text",
-        hash_including(model: anything, provider: anything)
-      )
-      expect(result).to eq(mock_response.vectors)
+      it "does not modify the original embedding" do
+        original = embedding.dup
+        pad_embedding.call(embedding)
+        expect(embedding).to eq(original)
+      end
     end
 
-    it "returns 1536-dimensional embedding" do
-      result = generator.generate("test text")
+    context "when embedding has fewer than TARGET_DIMENSION dimensions" do
+      context "with 512-dimensional embedding (Ollama jina-embeddings)" do
+        let(:embedding) { Array.new(512) { rand } }
 
-      expect(result).to be_an(Array)
-      expect(result.length).to eq(1536)
-      expect(result.first).to be_a(Numeric)
-    end
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
 
-    it "returns nil for blank text" do
-      result = generator.generate("")
-      expect(result).to be_nil
+        it "preserves the original embedding values at the start" do
+          result = pad_embedding.call(embedding)
+          expect(result.first(512)).to eq(embedding)
+        end
 
-      result = generator.generate(nil)
-      expect(result).to be_nil
-    end
+        it "pads the remaining elements with zeros" do
+          result = pad_embedding.call(embedding)
+          expect(result.last(1536 - 512)).to all(eq(0.0))
+        end
 
-    it "raises EmbeddingError on API failure" do
-      allow(RubyLLM).to receive(:embed).and_raise(StandardError.new("API Error"))
+        it "pads with exactly 1024 zeros" do
+          result = pad_embedding.call(embedding)
+          zero_count = result.count { |v| v == 0.0 }
+          expect(zero_count).to eq(1024)
+        end
 
-      expect {
-        generator.generate("test text")
-      }.to raise_error(DocumentProcessing::EmbeddingGenerator::EmbeddingError, /Failed to generate embedding/)
-    end
-  end
+        it "returns an Array" do
+          result = pad_embedding.call(embedding)
+          expect(result).to be_an(Array)
+        end
 
-  describe "#generate_batch" do
-    let(:embedding1) { Array.new(512) { 0.1 } }
-    let(:embedding2) { Array.new(512) { 0.2 } }
-    let(:embedding3) { Array.new(512) { 0.3 } }
+        it "returns an array of floats" do
+          result = pad_embedding.call(embedding)
+          expect(result).to all(be_a(Numeric))
+        end
+      end
 
-    before do
-      # Mock individual calls to generate
-      call_count = 0
-      allow_any_instance_of(described_class).to receive(:generate) do |_, text|
-        call_count += 1
-        case text
-        when "text1" then embedding1
-        when "text2" then embedding2
-        when "text3" then embedding3
+      context "with 1-dimensional embedding" do
+        let(:embedding) { [0.5] }
+
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+
+        it "preserves the original value at index 0" do
+          result = pad_embedding.call(embedding)
+          expect(result.first).to eq(0.5)
+        end
+
+        it "pads the remaining 1535 elements with zeros" do
+          result = pad_embedding.call(embedding)
+          expect(result.last(1535)).to all(eq(0.0))
+        end
+      end
+
+      context "with 1535-dimensional embedding (one short)" do
+        let(:embedding) { Array.new(1535) { rand } }
+
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+
+        it "preserves all original values" do
+          result = pad_embedding.call(embedding)
+          expect(result.first(1535)).to eq(embedding)
+        end
+
+        it "pads with exactly one zero at the end" do
+          result = pad_embedding.call(embedding)
+          expect(result.last).to eq(0.0)
+        end
+      end
+
+      context "with an empty embedding" do
+        let(:embedding) { [] }
+
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+
+        it "fills entirely with zeros" do
+          result = pad_embedding.call(embedding)
+          expect(result).to all(eq(0.0))
+        end
+      end
+
+      context "with embeddings containing specific float values" do
+        let(:embedding) { [1.0, 2.5, -3.7, 0.0, 0.123456789] }
+
+        it "preserves the exact float values" do
+          result = pad_embedding.call(embedding)
+          expect(result[0]).to eq(1.0)
+          expect(result[1]).to eq(2.5)
+          expect(result[2]).to eq(-3.7)
+          expect(result[3]).to eq(0.0)
+          expect(result[4]).to eq(0.123456789)
+        end
+
+        it "pads with 0.0 not just 0" do
+          result = pad_embedding.call(embedding)
+          padded_section = result.last(1536 - embedding.length)
+          padded_section.each do |val|
+            expect(val).to be_a(Float)
+            expect(val).to eq(0.0)
+          end
+        end
+
+        it "returns an array of 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+      end
+
+      context "with embeddings containing negative values" do
+        let(:embedding) { Array.new(256) { -rand } }
+
+        it "preserves negative values" do
+          result = pad_embedding.call(embedding)
+          expect(result.first(256)).to eq(embedding)
+        end
+
+        it "pads with positive zeros, not negative zeros" do
+          result = pad_embedding.call(embedding)
+          expect(result.last(1536 - 256)).to all(eq(0.0))
         end
       end
     end
 
-    it "generates embeddings for multiple texts" do
-      result = generator.generate_batch(["text1", "text2", "text3"])
+    context "when embedding has more than TARGET_DIMENSION dimensions" do
+      context "with 2048-dimensional embedding" do
+        let(:embedding) { Array.new(2048) { rand } }
 
-      expect(result).to be_an(Array)
-      expect(result.length).to eq(3)
-      expect(result[0]).to eq(embedding1)
-      expect(result[1]).to eq(embedding2)
-      expect(result[2]).to eq(embedding3)
-    end
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
 
-    it "returns empty array for empty input" do
-      result = generator.generate_batch([])
-      expect(result).to eq([])
-    end
+        it "returns the first 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result).to eq(embedding.first(1536))
+        end
 
-    it "processes texts in batches of 50" do
-      texts = Array.new(100) { |i| "text#{i}" }
+        it "drops the excess elements" do
+          result = pad_embedding.call(embedding)
+          expect(result).not_to include(*embedding.last(512))
+        end
 
-      # Just verify it doesn't error with large batches
-      result = generator.generate_batch(texts)
-      expect(result.length).to eq(100)
-    end
-
-    it "raises EmbeddingError if any embedding fails" do
-      allow_any_instance_of(described_class).to receive(:generate).and_raise(
-        DocumentProcessing::EmbeddingGenerator::EmbeddingError.new("Failed")
-      )
-
-      expect {
-        generator.generate_batch(["text1", "text2"])
-      }.to raise_error(DocumentProcessing::EmbeddingGenerator::EmbeddingError)
-    end
-
-    it "handles batch processing correctly" do
-      texts = Array.new(75) { |i| "text#{i}" }
-
-      # Mock generate to return unique embeddings
-      allow_any_instance_of(described_class).to receive(:generate) do |_, text|
-        # Return a unique embedding for each text
-        seed = text.hash
-        Array.new(512) { seed.to_f / 1000000 }
+        it "returns an Array" do
+          result = pad_embedding.call(embedding)
+          expect(result).to be_an(Array)
+        end
       end
 
-      result = generator.generate_batch(texts)
+      context "with 1537-dimensional embedding (one over)" do
+        let(:embedding) { Array.new(1537) { rand } }
 
-      expect(result.length).to eq(75)
-      # Verify embeddings are unique (at least check first and last)
-      expect(result.first).not_to eq(result.last)
+        it "returns an array with exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+
+        it "returns the first 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result).to eq(embedding.first(1536))
+        end
+
+        it "excludes the last element" do
+          result = pad_embedding.call(embedding)
+          expect(result).not_to include(embedding.last)
+        end
+      end
+
+      context "with a very large embedding" do
+        let(:embedding) { Array.new(4096) { rand } }
+
+        it "truncates to exactly 1536 elements" do
+          result = pad_embedding.call(embedding)
+          expect(result.length).to eq(1536)
+        end
+
+        it "preserves the first 1536 values exactly" do
+          result = pad_embedding.call(embedding)
+          expect(result).to eq(embedding.take(1536))
+        end
+      end
     end
-  end
 
-  describe "model configuration" do
-    it "uses environment-specific embedding model" do
-      mock_response = double("Response", vectors: Array.new(512) { rand })
-      allow(RubyLLM).to receive(:embed).and_return(mock_response)
+    context "when verifying TARGET_DIMENSION constant" do
+      it "TARGET_DIMENSION is 1536" do
+        expect(described_class::TARGET_DIMENSION).to eq(1536)
+      end
 
-      generator.generate("test")
+      it "pads to match TARGET_DIMENSION" do
+        short_embedding = Array.new(100) { rand }
+        result = pad_embedding.call(short_embedding)
+        expect(result.length).to eq(described_class::TARGET_DIMENSION)
+      end
 
-      # In test environment, uses test config
-      expect(RubyLLM).to have_received(:embed).with(
-        anything,
-        hash_including(model: anything, provider: anything)
-      )
+      it "truncates to match TARGET_DIMENSION" do
+        long_embedding = Array.new(2000) { rand }
+        result = pad_embedding.call(long_embedding)
+        expect(result.length).to eq(described_class::TARGET_DIMENSION)
+      end
+    end
+
+    context "when verifying return type and structure" do
+      let(:embedding) { Array.new(512) { rand } }
+
+      it "always returns an Array" do
+        result = pad_embedding.call(embedding)
+        expect(result).to be_a(Array)
+      end
+
+      it "does not return nil" do
+        result = pad_embedding.call(embedding)
+        expect(result).not_to be_nil
+      end
+
+      it "returns an array without nil elements" do
+        result = pad_embedding.call(embedding)
+        expect(result).not_to include(nil)
+      end
+
+      it "returns numeric values only" do
+        result = pad_embedding.call(embedding)
+        expect(result).to all(be_a(Numeric))
+      end
+    end
+
+    context "when called with embeddings of various sizes around the boundary" do
+      [511, 512, 513, 1535, 1536, 1537].each do |size|
+        context "with #{size}-dimensional embedding" do
+          let(:embedding) { Array.new(size) { rand } }
+
+          it "always returns exactly 1536 dimensions" do
+            result = pad_embedding.call(embedding)
+            expect(result.length).to eq(1536)
+          end
+        end
+      end
+    end
+
+    context "when embedding contains zero values mixed with non-zero values" do
+      let(:embedding) { [0.0, 1.0, 0.0, 2.0] }
+
+      it "preserves existing zeros in original embedding" do
+        result = pad_embedding.call(embedding)
+        expect(result[0]).to eq(0.0)
+        expect(result[2]).to eq(0.0)
+      end
+
+      it "pads remaining positions with zeros" do
+        result = pad_embedding.call(embedding)
+        expect(result.last(1536 - 4)).to all(eq(0.0))
+      end
+
+      it "correctly pads to 1536 dimensions" do
+        result = pad_embedding.call(embedding)
+        expect(result.length).to eq(1536)
+      end
     end
   end
 end

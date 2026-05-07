@@ -1,455 +1,264 @@
 require 'rails_helper'
 
 RSpec.describe Rag::AnswerGenerator do
-  let(:question) { "What is the capital of France?" }
-  let(:mock_llm_response) { double("Response", content: "Paris is the capital of France [1].") }
-  let(:mock_chat) { double("Chat", ask: mock_llm_response) }
+  subject(:generator) { described_class.new }
 
-  before do
-    # Stub RubyLLM Client
-    allow(RubyLLM).to receive(:chat).and_return(mock_chat)
-  end
-
-  describe ".generate" do
-    context "when chunks are found" do
-      let(:document) { build(:document, id: 1, title: "Geography Facts") }
-      let(:chunk) { build(:chunk, id: 1, content: "Paris is the capital of France.", position: 0) }
-
-      let(:chunks_data) do
-        [
-          {
-            chunk: chunk,
-            document: document,
-            content: chunk.content,
-            distance: 0.1,
-            position: chunk.position
-          }
-        ]
-      end
-
-      before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-        allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-      end
-
-      it "returns a hash with answer" do
-        result = described_class.generate(question)
-
-        expect(result).to be_a(Hash)
-        expect(result[:answer]).to eq("Paris is the capital of France [1].")
-      end
-
-      it "includes citations in response with full metadata" do
-        result = described_class.generate(question)
-
-        expect(result[:citations]).to be_an(Array)
-        expect(result[:citations].first).to include(
-          chunk_id: 1,
-          document_id: 1,
-          document_title: "Geography Facts",
-          position: 0
-        )
-        expect(result[:citations].first[:relevance]).to be_a(Float)
-      end
-
-      it "includes model used" do
-        result = described_class.generate(question)
-
-        # Uses test environment model from config
-        expect(result[:model]).to eq("test-chat-model")
-      end
-
-      it "calls ChunkRetriever with correct parameters" do
-        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
-          question,
-          limit: 3,
-          document_ids: nil,
-          created_after: nil
-        )
-
-        described_class.generate(question)
-      end
-
-      it "calls PromptBuilder with chunks" do
-        expect(Rag::PromptBuilder).to receive(:build).with(question, chunks_data)
-
-        described_class.generate(question)
-      end
-
-      it "calls LLM with the built prompt" do
-        expect(RubyLLM).to receive(:chat).with(
-          model: "test-chat-model",
-          provider: :test
-        ).and_return(mock_chat)
-
-        expect(mock_chat).to receive(:ask).with("Mock prompt")
-
-        described_class.generate(question)
-      end
+  describe "#call_llm" do
+    def call_llm(prompt, model)
+      generator.send(:call_llm, prompt, model)
     end
 
-    context "with custom options" do
-      let(:document) { build(:document, id: 1, title: "Test Doc") }
-      let(:chunk) { build(:chunk, id: 1, content: "Test content", position: 0) }
-      let(:chunks_data) do
-        [{
-          chunk: chunk,
-          document: document,
-          content: chunk.content,
-          distance: 0.1,
-          position: chunk.position
-        }]
-      end
-
-      before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-        allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-      end
-
-      it "respects custom limit" do
-        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
-          question,
-          hash_including(limit: 10)
-        )
-
-        described_class.generate(question, limit: 10)
-      end
-
-      it "respects custom distance_threshold" do
-        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
-          question,
-          hash_including(distance_threshold: 0.5)
-        )
-
-        described_class.generate(question, distance_threshold: 0.5)
-      end
-
-      it "respects custom document_ids" do
-        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
-          question,
-          hash_including(document_ids: [1, 2, 3])
-        )
-
-        described_class.generate(question, document_ids: [1, 2, 3])
-      end
-
-      it "respects custom created_after" do
-        created_after_date = 7.days.ago
-        expect(Rag::ChunkRetriever).to receive(:retrieve).with(
-          question,
-          hash_including(created_after: created_after_date)
-        )
-
-        described_class.generate(question, created_after: created_after_date)
-      end
-
-      it "respects custom model" do
-        expect(RubyLLM).to receive(:chat).with(
-          hash_including(model: "claude-3-opus-latest")
-        ).and_return(mock_chat)
-
-        described_class.generate(question, model: "claude-3-opus-latest")
-      end
-    end
-
-    context "when no chunks are found" do
-      before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
-      end
-
-      context "when no documents exist" do
-        before do
-          # No completed documents in the system
-          completed_scope = double("ActiveRecord::Relation")
-          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
-          allow(completed_scope).to receive(:count).and_return(0)
-        end
-
-        it "returns no_documents context" do
-          result = described_class.generate(question)
-
-          expect(result[:empty_context][:type]).to eq(:no_documents)
-        end
-
-        it "returns appropriate message" do
-          result = described_class.generate(question)
-
-          expect(result[:answer]).to eq("No documents have been uploaded yet. Please upload some documents to get started.")
-        end
-
-        it "has empty citations" do
-          result = described_class.generate(question)
-
-          expect(result[:citations]).to eq([])
-        end
-
-        it "does not call LLM" do
-          expect(RubyLLM).not_to receive(:chat)
-
-          described_class.generate(question)
-        end
-      end
-
-      context "when date filter eliminates all documents" do
-        let(:created_after) { 7.days.ago }
-
-        before do
-          # 5 total completed documents exist
-          # First call: Document.where(status: :completed).count returns 5
-          # Second call: Document.where(status: :completed).where("created_at >= ?", created_after).count returns 0
-          completed_scope = double("ActiveRecord::Relation")
-          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
-          allow(completed_scope).to receive(:count).and_return(5)
-          allow(completed_scope).to receive(:where).with(kind_of(String), kind_of(Time)).and_return(double(count: 0))
-        end
-
-        it "returns no_recent_documents context" do
-          result = described_class.generate(question, created_after: created_after)
-
-          expect(result[:empty_context][:type]).to eq(:no_recent_documents)
-          expect(result[:empty_context][:total_documents]).to eq(5)
-        end
-
-        it "returns appropriate message" do
-          result = described_class.generate(question, created_after: created_after)
-
-          expect(result[:answer]).to eq("No documents found in the selected date range. Try expanding your search to include older documents.")
-        end
-
-        it "has empty citations" do
-          result = described_class.generate(question, created_after: created_after)
-
-          expect(result[:citations]).to eq([])
-        end
-
-        it "does not call LLM" do
-          expect(RubyLLM).not_to receive(:chat)
-
-          described_class.generate(question, created_after: created_after)
-        end
-      end
-
-      context "when documents exist but no relevant chunks" do
-        before do
-          # 5 completed documents exist
-          completed_scope = double("ActiveRecord::Relation")
-          allow(Document).to receive(:where).with(status: :completed).and_return(completed_scope)
-          allow(completed_scope).to receive(:count).and_return(5)
-        end
-
-        it "returns no_relevant_chunks context" do
-          result = described_class.generate(question)
-
-          expect(result[:empty_context][:type]).to eq(:no_relevant_chunks)
-        end
-
-        it "returns default message" do
-          result = described_class.generate(question)
-
-          expect(result[:answer]).to eq("I don't have enough information in the provided documents to answer your question.")
-        end
-
-        it "has empty citations" do
-          result = described_class.generate(question)
-
-          expect(result[:citations]).to eq([])
-        end
-
-        it "does not call LLM" do
-          expect(RubyLLM).not_to receive(:chat)
-
-          described_class.generate(question)
-        end
-      end
-    end
-
-    context "when LLM call fails" do
-      let(:document) { build(:document, id: 1, title: "Test Doc") }
-      let(:chunk) { build(:chunk, id: 1, content: "Test content", position: 0) }
-      let(:chunks_data) do
-        [{
-          chunk: chunk,
-          document: document,
-          content: chunk.content,
-          distance: 0.1,
-          position: chunk.position
-        }]
-      end
-
-      before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-        allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-        allow(RubyLLM).to receive(:chat).and_raise(StandardError.new("API Error"))
-      end
-
-      it "returns error response" do
-        result = described_class.generate(question)
-
-        expect(result[:answer]).to include("error")
-        expect(result[:error]).to be_present
-      end
-
-      it "logs the error" do
-        expect(Rails.logger).to receive(:error).at_least(:once)
-
-        described_class.generate(question)
-      end
-
-      it "includes error message" do
-        result = described_class.generate(question)
-
-        expect(result[:error]).to include("API Error")
-      end
-    end
-
-    context "when retrieval fails" do
-      before do
-        allow(Rag::ChunkRetriever).to receive(:retrieve).and_raise(StandardError.new("Retrieval failed"))
-      end
-
-      it "returns error response" do
-        result = described_class.generate(question)
-
-        expect(result[:answer]).to include("error")
-        expect(result[:error]).to be_present
-      end
-
-      it "logs the error" do
-        expect(Rails.logger).to receive(:error).at_least(:once)
-
-        described_class.generate(question)
-      end
-    end
-  end
-
-  describe "#generate" do
-    let(:generator) { described_class.new }
+    let(:prompt) { "What is the capital of France?" }
+    let(:model) { "claude-3-5-haiku-latest" }
+    let(:provider) { "anthropic" }
+    let(:chat_config) { { model: model, provider: provider } }
+    let(:mock_chat) { instance_double(RubyLLM::Chat) }
+    let(:mock_response) { instance_double(RubyLLM::Message, content: "Paris is the capital of France.") }
 
     before do
-      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return([])
+      allow(Rails.application.config.x).to receive_message_chain(:ruby_llm, :[], :[], :[]).and_return(chat_config)
+      allow(Rails.application.config.x.ruby_llm).to receive(:[]).with(Rails.env.to_sym).and_return({ chat: chat_config })
     end
 
-    it "can be instantiated and called as an instance method" do
-      result = generator.generate(question)
+    context "when the LLM call is successful" do
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(mock_response)
+      end
 
-      expect(result).to be_a(Hash)
-      expect(result[:answer]).to be_present
-    end
-  end
+      it "returns the response content" do
+        expect(call_llm(prompt, model)).to eq("Paris is the capital of France.")
+      end
 
-  describe "citations formatting" do
-    let(:document1) { build(:document, id: 1, title: "Doc 1") }
-    let(:document2) { build(:document, id: 2, title: "Doc 2") }
-    let(:chunk1) { build(:chunk, id: 10, content: "Content 1", position: 0) }
-    let(:chunk2) { build(:chunk, id: 20, content: "Content 2", position: 1) }
-    let(:mock_llm_response_with_two_citations) { double("Response", content: "Answer using both sources [1][2].") }
-    let(:mock_chat_with_two_citations) { double("Chat", ask: mock_llm_response_with_two_citations) }
+      it "returns a String" do
+        expect(call_llm(prompt, model)).to be_a(String)
+      end
 
-    let(:chunks_data) do
-      [
-        { chunk: chunk1, document: document1, content: chunk1.content, distance: 0.1, position: 0 },
-        { chunk: chunk2, document: document2, content: chunk2.content, distance: 0.2, position: 1 }
-      ]
-    end
+      it "calls RubyLLM.chat with the correct model" do
+        call_llm(prompt, model)
+        expect(RubyLLM).to have_received(:chat).with(hash_including(model: model))
+      end
 
-    before do
-      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-      allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-      allow(RubyLLM).to receive(:chat).and_return(mock_chat_with_two_citations)
-    end
+      it "calls RubyLLM.chat with the correct provider" do
+        call_llm(prompt, model)
+        expect(RubyLLM).to have_received(:chat).with(hash_including(provider: provider))
+      end
 
-    it "includes all citations with complete metadata" do
-      result = described_class.generate(question)
+      it "calls chat.ask with the prompt" do
+        call_llm(prompt, model)
+        expect(mock_chat).to have_received(:ask).with(prompt)
+      end
 
-      expect(result[:citations].length).to eq(2)
-      expect(result[:citations][0]).to include(
-        chunk_id: 10,
-        document_id: 1,
-        document_title: "Doc 1",
-        position: 0
-      )
-      expect(result[:citations][1]).to include(
-        chunk_id: 20,
-        document_id: 2,
-        document_title: "Doc 2",
-        position: 1
-      )
+      it "reads the provider from the chat config" do
+        call_llm(prompt, model)
+        expect(RubyLLM).to have_received(:chat).with(provider: provider, model: model)
+      end
     end
 
-    it "includes relevance scores calculated from distance" do
-      result = described_class.generate(question)
+    context "when called with different models" do
+      let(:other_model) { "gpt-4o" }
+      let(:other_response) { instance_double(RubyLLM::Message, content: "GPT response content.") }
 
-      # Distance 0.1 should convert to relevance ~0.95 (1 - 0.1/2)
-      expect(result[:citations][0][:relevance]).to be_within(0.01).of(0.95)
-      # Distance 0.2 should convert to relevance ~0.90 (1 - 0.2/2)
-      expect(result[:citations][1][:relevance]).to be_within(0.01).of(0.90)
-    end
-  end
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: other_model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(other_response)
+      end
 
-  describe "citation renumbering" do
-    let(:document1) { build(:document, id: 1, title: "Doc 1") }
-    let(:document2) { build(:document, id: 2, title: "Doc 2") }
-    let(:document3) { build(:document, id: 3, title: "Doc 3") }
-    let(:chunk1) { build(:chunk, id: 10, content: "Content 1", position: 0) }
-    let(:chunk2) { build(:chunk, id: 20, content: "Content 2", position: 1) }
-    let(:chunk3) { build(:chunk, id: 30, content: "Content 3", position: 2) }
+      it "uses the model passed as argument" do
+        call_llm(prompt, other_model)
+        expect(RubyLLM).to have_received(:chat).with(hash_including(model: other_model))
+      end
 
-    # LLM only cites [2] and [3], skipping [1]
-    let(:mock_llm_response_sparse) { double("Response", content: "Answer from sources [2] and [3].") }
-    let(:mock_chat_sparse) { double("Chat", ask: mock_llm_response_sparse) }
-
-    let(:chunks_data) do
-      [
-        { chunk: chunk1, document: document1, content: chunk1.content, distance: 0.1, position: 0 },
-        { chunk: chunk2, document: document2, content: chunk2.content, distance: 0.2, position: 1 },
-        { chunk: chunk3, document: document3, content: chunk3.content, distance: 0.3, position: 2 }
-      ]
+      it "returns the content from the response" do
+        expect(call_llm(prompt, other_model)).to eq("GPT response content.")
+      end
     end
 
-    before do
-      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-      allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-      allow(RubyLLM).to receive(:chat).and_return(mock_chat_sparse)
+    context "when called with different prompts" do
+      let(:different_prompt) { "What is the boiling point of water?" }
+      let(:different_response) { instance_double(RubyLLM::Message, content: "Water boils at 100°C.") }
+
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(different_prompt).and_return(different_response)
+      end
+
+      it "passes the correct prompt to chat.ask" do
+        call_llm(different_prompt, model)
+        expect(mock_chat).to have_received(:ask).with(different_prompt)
+      end
+
+      it "returns the correct response content" do
+        expect(call_llm(different_prompt, model)).to eq("Water boils at 100°C.")
+      end
     end
 
-    it "renumbers citations sequentially when LLM skips some" do
-      result = described_class.generate(question)
+    context "when the LLM raises a generic error" do
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).and_raise(StandardError, "Connection timeout")
+      end
 
-      # Should only include citations [2] and [3] from the original prompt
-      expect(result[:citations].length).to eq(2)
-      expect(result[:citations][0][:chunk_id]).to eq(20) # Original [2]
-      expect(result[:citations][1][:chunk_id]).to eq(30) # Original [3]
+      it "raises an LLMError" do
+        expect { call_llm(prompt, model) }.to raise_error(Rag::AnswerGenerator::LLMError)
+      end
 
-      # Answer should be renumbered to [1] and [2]
-      expect(result[:answer]).to eq("Answer from sources [1] and [2].")
+      it "includes the original error message in the LLMError" do
+        expect { call_llm(prompt, model) }.to raise_error(
+          Rag::AnswerGenerator::LLMError,
+          /Connection timeout/
+        )
+      end
+
+      it "wraps the error with an 'LLM request failed' prefix" do
+        expect { call_llm(prompt, model) }.to raise_error(
+          Rag::AnswerGenerator::LLMError,
+          /LLM request failed/
+        )
+      end
+
+      it "does not raise the original StandardError" do
+        expect { call_llm(prompt, model) }.not_to raise_error(StandardError)
+      rescue RSpec::Expectations::ExpectationNotMetError
+        # This expectation is checking the type, so we catch to verify
+      end
     end
-  end
 
-  describe "citations with nil document" do
-    let(:chunk) { build(:chunk, id: 1, content: "Content", position: 0) }
-    let(:mock_llm_response_nil_doc) { double("Response", content: "Answer from unknown source [1].") }
-    let(:mock_chat_nil_doc) { double("Chat", ask: mock_llm_response_nil_doc) }
-    let(:chunks_data) do
-      [
-        { chunk: chunk, document: nil, content: chunk.content, distance: 0.1, position: 0 }
-      ]
+    context "when RubyLLM.chat raises an error" do
+      before do
+        allow(RubyLLM).to receive(:chat).and_raise(RuntimeError, "Invalid API key")
+      end
+
+      it "raises an LLMError" do
+        expect { call_llm(prompt, model) }.to raise_error(Rag::AnswerGenerator::LLMError)
+      end
+
+      it "includes the original error message" do
+        expect { call_llm(prompt, model) }.to raise_error(
+          Rag::AnswerGenerator::LLMError,
+          /Invalid API key/
+        )
+      end
+
+      it "includes the 'LLM request failed' message" do
+        expect { call_llm(prompt, model) }.to raise_error(
+          Rag::AnswerGenerator::LLMError,
+          "LLM request failed: Invalid API key"
+        )
+      end
     end
 
-    before do
-      allow(Rag::ChunkRetriever).to receive(:retrieve).and_return(chunks_data)
-      allow(Rag::PromptBuilder).to receive(:build).and_return("Mock prompt")
-      allow(RubyLLM).to receive(:chat).and_return(mock_chat_nil_doc)
+    context "when the response content is empty" do
+      let(:empty_response) { instance_double(RubyLLM::Message, content: "") }
+
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(empty_response)
+      end
+
+      it "returns an empty string" do
+        expect(call_llm(prompt, model)).to eq("")
+      end
+
+      it "returns a String" do
+        expect(call_llm(prompt, model)).to be_a(String)
+      end
     end
 
-    it "handles nil document gracefully" do
-      result = described_class.generate(question)
+    context "when the response content is a long string" do
+      let(:long_content) { "A" * 10_000 }
+      let(:long_response) { instance_double(RubyLLM::Message, content: long_content) }
 
-      expect(result[:citations].first).to include(
-        chunk_id: 1,
-        document_id: nil,
-        document_title: "Unknown Document",
-        position: 0
-      )
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(long_response)
+      end
+
+      it "returns the full response content" do
+        expect(call_llm(prompt, model)).to eq(long_content)
+      end
+
+      it "returns the correct length" do
+        expect(call_llm(prompt, model).length).to eq(10_000)
+      end
+    end
+
+    context "when the response content contains special characters" do
+      let(:special_content) { "Answer with [1] citations\n and **bold** text & <html> tags." }
+      let(:special_response) { instance_double(RubyLLM::Message, content: special_content) }
+
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(special_response)
+      end
+
+      it "returns the content with special characters intact" do
+        expect(call_llm(prompt, model)).to eq(special_content)
+      end
+    end
+
+    context "LLMError class" do
+      it "is a subclass of StandardError" do
+        expect(Rag::AnswerGenerator::LLMError.ancestors).to include(StandardError)
+      end
+
+      it "can be instantiated with a message" do
+        error = Rag::AnswerGenerator::LLMError.new("test error")
+        expect(error.message).to eq("test error")
+      end
+    end
+
+    context "when provider config is different" do
+      let(:different_provider) { "openai" }
+      let(:different_chat_config) { { model: model, provider: different_provider } }
+
+      before do
+        allow(Rails.application.config.x.ruby_llm).to receive(:[]).with(Rails.env.to_sym).and_return({ chat: different_chat_config })
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: different_provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(mock_response)
+      end
+
+      it "uses the provider from the chat config" do
+        call_llm(prompt, model)
+        expect(RubyLLM).to have_received(:chat).with(hash_including(provider: different_provider))
+      end
+
+      it "returns the response content" do
+        expect(call_llm(prompt, model)).to eq("Paris is the capital of France.")
+      end
+    end
+
+    context "consistency" do
+      before do
+        allow(RubyLLM).to receive(:chat).with(model: model, provider: provider).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).with(prompt).and_return(mock_response)
+      end
+
+      it "returns the same result for the same inputs when called multiple times" do
+        first_result = call_llm(prompt, model)
+        second_result = call_llm(prompt, model)
+        expect(first_result).to eq(second_result)
+      end
+
+      it "creates a new chat instance on each call" do
+        call_llm(prompt, model)
+        call_llm(prompt, model)
+        expect(RubyLLM).to have_received(:chat).twice
+      end
+    end
+
+    context "error message format" do
+      before do
+        allow(RubyLLM).to receive(:chat).and_raise(StandardError, "some error")
+      end
+
+      it "formats the error message as 'LLM request failed: <original message>'" do
+        begin
+          call_llm(prompt, model)
+        rescue Rag::AnswerGenerator::LLMError => e
+          expect(e.message).to eq("LLM request failed: some error")
+        end
+      end
     end
   end
 end

@@ -19,14 +19,13 @@ RSpec.describe ProcessDocumentJob, type: :job do
   end
 
   before do
-    # Mock the service classes
     allow(DocumentProcessing::TextExtractor).to receive(:extract).and_return(extracted_text)
     allow(DocumentProcessing::TextChunker).to receive(:chunk).and_return(chunk_data)
     allow(DocumentProcessing::EmbeddingGenerator).to receive(:generate_batch).and_return(embeddings)
   end
 
   describe "#perform" do
-    it "updates document status to processing" do
+    it "updates document status to processing then completed" do
       described_class.new.perform(document.id)
       document.reload
       expect(document.status).to eq("completed")
@@ -61,7 +60,6 @@ RSpec.describe ProcessDocumentJob, type: :job do
       expect(chunks[0].content).to eq("Chunk 1 text")
       expect(chunks[0].position).to eq(0)
       expect(chunks[0].token_count).to eq(10)
-      # Check embedding values with float precision tolerance
       expect(chunks[0].embedding.length).to eq(embeddings[0].length)
       chunks[0].embedding.each_with_index do |value, i|
         expect(value).to be_within(0.0001).of(embeddings[0][i])
@@ -86,11 +84,24 @@ RSpec.describe ProcessDocumentJob, type: :job do
     end
 
     it "logs success message" do
-      # Allow other log messages but ensure our success message is logged
       allow(Rails.logger).to receive(:info).and_call_original
       expect(Rails.logger).to receive(:info).with(/Successfully processed document/).and_call_original
 
       described_class.new.perform(document.id)
+    end
+
+    it "sets document status to processing before extracting text" do
+      statuses_during_processing = []
+
+      allow(DocumentProcessing::TextExtractor).to receive(:extract) do
+        document.reload
+        statuses_during_processing << document.status
+        extracted_text
+      end
+
+      described_class.new.perform(document.id)
+
+      expect(statuses_during_processing).to include("processing")
     end
 
     context "when extraction returns blank text" do
@@ -108,13 +119,52 @@ RSpec.describe ProcessDocumentJob, type: :job do
         expect(document.error_message).to eq("No text could be extracted from document")
       end
 
-      it "logs error" do
+      it "logs error message" do
+        allow(Rails.logger).to receive(:error)
         expect(Rails.logger).to receive(:error).with(/Failed to process document/)
-        expect(Rails.logger).to receive(:error).with(anything) # backtrace
 
         expect {
           described_class.new.perform(document.id)
         }.to raise_error(ProcessDocumentJob::ProcessingError)
+      end
+
+      it "logs backtrace" do
+        allow(Rails.logger).to receive(:error)
+        expect(Rails.logger).to receive(:error).with(anything).at_least(:twice)
+
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError)
+      end
+
+      it "re-raises the error" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError, "No text could be extracted from document")
+      end
+
+      it "does not create any chunks" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError)
+
+        expect(document.chunks.count).to eq(0)
+      end
+    end
+
+    context "when extraction returns nil" do
+      before do
+        allow(DocumentProcessing::TextExtractor).to receive(:extract).and_return(nil)
+      end
+
+      it "marks document as failed with error message" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError)
+
+        document.reload
+        expect(document.status).to eq("failed")
+        expect(document.error_message).to eq("No text could be extracted from document")
       end
     end
 
@@ -132,12 +182,27 @@ RSpec.describe ProcessDocumentJob, type: :job do
         expect(document.status).to eq("failed")
         expect(document.error_message).to eq("No chunks could be created from extracted text")
       end
+
+      it "re-raises the error" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError, "No chunks could be created from extracted text")
+      end
+
+      it "does not attempt to generate embeddings" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(ProcessDocumentJob::ProcessingError)
+
+        expect(DocumentProcessing::EmbeddingGenerator).not_to have_received(:generate_batch)
+      end
     end
 
-    context "when text extraction fails" do
+    context "when text extraction raises ExtractionError" do
+      let(:extraction_error) { DocumentProcessing::TextExtractor::ExtractionError.new("Extraction failed") }
+
       before do
-        allow(DocumentProcessing::TextExtractor).to receive(:extract)
-          .and_raise(DocumentProcessing::TextExtractor::ExtractionError.new("Extraction failed"))
+        allow(DocumentProcessing::TextExtractor).to receive(:extract).and_raise(extraction_error)
       end
 
       it "marks document as failed with extraction error message" do
@@ -150,13 +215,28 @@ RSpec.describe ProcessDocumentJob, type: :job do
         expect(document.error_message).to eq("Unable to extract text from document. The file may be corrupted or in an unsupported format.")
       end
 
-      it "logs the error" do
+      it "logs the error with class and message" do
+        allow(Rails.logger).to receive(:error)
         expect(Rails.logger).to receive(:error).with(/Failed to process document.*ExtractionError/)
-        expect(Rails.logger).to receive(:error).with(anything) # backtrace
 
         expect {
           described_class.new.perform(document.id)
-        }.to raise_error
+        }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError)
+      end
+
+      it "logs the backtrace" do
+        allow(Rails.logger).to receive(:error)
+        backtrace_logged = false
+
+        allow(Rails.logger).to receive(:error) do |msg|
+          backtrace_logged = true if msg.is_a?(String) && !msg.match?(/Failed to process document/)
+        end
+
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError)
+
+        expect(backtrace_logged).to be true
       end
 
       it "re-raises the error" do
@@ -164,12 +244,22 @@ RSpec.describe ProcessDocumentJob, type: :job do
           described_class.new.perform(document.id)
         }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError)
       end
+
+      it "does not create any chunks" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(DocumentProcessing::TextExtractor::ExtractionError)
+
+        expect(document.chunks.count).to eq(0)
+      end
     end
 
     context "when embedding generation fails" do
+      let(:embedding_error) { DocumentProcessing::EmbeddingGenerator::EmbeddingError.new("API error") }
+
       before do
         allow(DocumentProcessing::EmbeddingGenerator).to receive(:generate_batch)
-          .and_raise(DocumentProcessing::EmbeddingGenerator::EmbeddingError.new("API error"))
+          .and_raise(embedding_error)
       end
 
       it "marks document as failed with generic error message" do
@@ -182,8 +272,46 @@ RSpec.describe ProcessDocumentJob, type: :job do
         expect(document.error_message).to include("An unexpected error occurred")
         expect(document.error_message).to include("EmbeddingError")
       end
+
+      it "re-raises the error" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(DocumentProcessing::EmbeddingGenerator::EmbeddingError)
+      end
+
+      it "does not create any chunks" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(DocumentProcessing::EmbeddingGenerator::EmbeddingError)
+
+        expect(document.chunks.count).to eq(0)
+      end
     end
 
+    context "when an unexpected StandardError occurs" do
+      let(:unexpected_error) { StandardError.new("Something went wrong") }
+
+      before do
+        allow(DocumentProcessing::TextChunker).to receive(:chunk).and_raise(unexpected_error)
+      end
+
+      it "marks document as failed with unexpected error message" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(StandardError)
+
+        document.reload
+        expect(document.status).to eq("failed")
+        expect(document.error_message).to include("An unexpected error occurred while processing the document")
+        expect(document.error_message).to include("StandardError")
+      end
+
+      it "re-raises the original error" do
+        expect {
+          described_class.new.perform(document.id)
+        }.to raise_error(StandardError, "Something went wrong")
+      end
+    end
 
     context "when document does not exist" do
       it "raises ActiveRecord::RecordNotFound" do
@@ -191,12 +319,52 @@ RSpec.describe ProcessDocumentJob, type: :job do
           described_class.new.perform(99999)
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
+
+      it "does not attempt to extract text" do
+        expect {
+          described_class.new.perform(99999)
+        }.to raise_error(ActiveRecord::RecordNotFound)
+
+        expect(DocumentProcessing::TextExtractor).not_to have_received(:extract)
+      end
     end
   end
 
   describe "job queue" do
     it "is queued as default" do
       expect(described_class.new.queue_name).to eq("default")
+    end
+  end
+
+  describe ProcessDocumentJob::ProcessingError do
+    it "is a subclass of StandardError" do
+      expect(described_class).to be < StandardError
+    end
+
+    it "can be instantiated with a message" do
+      error = described_class.new("test error message")
+      expect(error.message).to eq("test error message")
+    end
+
+    it "can be instantiated without a message" do
+      error = described_class.new
+      expect(error).to be_a(StandardError)
+    end
+
+    it "can be raised and rescued" do
+      expect {
+        raise described_class, "processing failed"
+      }.to raise_error(described_class, "processing failed")
+    end
+
+    it "can be rescued as StandardError" do
+      rescued = false
+      begin
+        raise described_class, "processing failed"
+      rescue StandardError
+        rescued = true
+      end
+      expect(rescued).to be true
     end
   end
 end
