@@ -72,6 +72,8 @@ group :development, :test do
   gem "factory_bot_rails"
   gem "faker"
   gem "shoulda-matchers", "~> 6.0"
+  gem "testgenai", path: "/Users/tracy/projects/testgenai"
+  gem "simplecov", require: false
 end
 
 gem "ruby_llm", "~> 1.9"
