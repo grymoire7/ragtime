@@ -7,8 +7,7 @@ FactoryBot.define do
 
     trait :with_embedding do
       after(:build) do |chunk|
-        # Create a dummy 512-dimensional embedding
-        chunk.embedding = Array.new(512) { rand }
+        chunk.embedding = Array.new(1536) { rand }
       end
     end
 

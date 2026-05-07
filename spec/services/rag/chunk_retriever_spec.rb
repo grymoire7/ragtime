@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Rag::ChunkRetriever do
   let!(:document1) { create(:document, title: "First Document") }
   let!(:document2) { create(:document, title: "Second Document") }
-  let(:query_embedding) { Array.new(512) { 0.5 } }
+  let(:query_embedding) { Array.new(1536) { 0.5 } }
   let(:mock_response) { double("Response", vectors: query_embedding) }
 
   # Disable transactional fixtures for this spec because vec_chunks doesn't support transactions
@@ -16,14 +16,14 @@ RSpec.describe Rag::ChunkRetriever do
     # Create chunks with embeddings for document1
     3.times do |i|
       chunk = build(:chunk, document: document1, content: "Document 1 chunk #{i}")
-      chunk.embedding = Array.new(512) { 0.5 + (i * 0.1) }
+      chunk.embedding = Array.new(1536) { 0.5 + (i * 0.1) }
       chunk.save!
     end
 
     # Create chunks with embeddings for document2
     2.times do |i|
       chunk = build(:chunk, document: document2, content: "Document 2 chunk #{i}")
-      chunk.embedding = Array.new(512) { 0.3 + (i * 0.1) }
+      chunk.embedding = Array.new(1536) { 0.3 + (i * 0.1) }
       chunk.save!
     end
   end
@@ -187,7 +187,7 @@ RSpec.describe Rag::ChunkRetriever do
       it "returns empty array" do
         query = "test query"
         # Very different embedding
-        very_different_embedding = Array.new(512) { 10.0 }
+        very_different_embedding = Array.new(1536) { 10.0 }
         very_different_response = double("Response", vectors: very_different_embedding)
         allow(RubyLLM).to receive(:embed).and_return(very_different_response)
 
@@ -200,7 +200,7 @@ RSpec.describe Rag::ChunkRetriever do
     context "with multiple documents filtered" do
       it "only returns chunks from specified documents" do
         query = "test query"
-        filtered_embedding = Array.new(512) { 0.4 }
+        filtered_embedding = Array.new(1536) { 0.4 }
         filtered_response = double("Response", vectors: filtered_embedding)
         allow(RubyLLM).to receive(:embed).and_return(filtered_response)
 

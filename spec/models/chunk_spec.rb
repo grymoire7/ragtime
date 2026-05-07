@@ -124,23 +124,23 @@ RSpec.describe Chunk, type: :model do
       # Create chunks with embeddings
       # Chunk 1: all 0.5
       chunk1 = create(:chunk, document: document, content: "First chunk")
-      chunk1.embedding = Array.new(512) { 0.5 }
+      chunk1.embedding = Array.new(1536) { 0.5 }
       chunk1.save!
 
       # Chunk 2: all 0.6 (more similar to query)
       chunk2 = create(:chunk, document: document, content: "Second chunk")
-      chunk2.embedding = Array.new(512) { 0.6 }
+      chunk2.embedding = Array.new(1536) { 0.6 }
       chunk2.save!
 
       # Chunk 3: all 0.1 (less similar to query)
       chunk3 = create(:chunk, document: document, content: "Third chunk")
-      chunk3.embedding = Array.new(512) { 0.1 }
+      chunk3.embedding = Array.new(1536) { 0.1 }
       chunk3.save!
     end
 
     it "returns chunks ordered by similarity" do
       # Query vector close to 0.6
-      query_embedding = Array.new(512) { 0.6 }
+      query_embedding = Array.new(1536) { 0.6 }
 
       results = Chunk.search_similar(query_embedding, limit: 3)
 
@@ -157,7 +157,7 @@ RSpec.describe Chunk, type: :model do
     end
 
     it "respects the limit parameter" do
-      query_embedding = Array.new(512) { 0.5 }
+      query_embedding = Array.new(1536) { 0.5 }
 
       results = Chunk.search_similar(query_embedding, limit: 2)
 
@@ -175,7 +175,7 @@ RSpec.describe Chunk, type: :model do
     end
 
     it "respects distance threshold" do
-      query_embedding = Array.new(512) { 0.6 }
+      query_embedding = Array.new(1536) { 0.6 }
 
       # Very strict threshold
       results = Chunk.search_similar(query_embedding, limit: 5, distance_threshold: 0.01)

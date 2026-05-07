@@ -24,7 +24,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
   end
 
   describe "#generate" do
-    let(:mock_response) { double("Response", vectors: Array.new(512) { rand }) }
+    let(:mock_response) { double("Response", vectors: Array.new(1536) { rand }) }
 
     before do
       allow(RubyLLM).to receive(:embed).and_return(mock_response)
@@ -41,11 +41,11 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
       expect(result).to eq(mock_response.vectors)
     end
 
-    it "returns 512-dimensional embedding" do
+    it "returns 1536-dimensional embedding" do
       result = generator.generate("test text")
 
       expect(result).to be_an(Array)
-      expect(result.length).to eq(512)
+      expect(result.length).to eq(1536)
       expect(result.first).to be_a(Numeric)
     end
 

@@ -40,7 +40,7 @@ RSpec.configure do |config|
     ActiveRecord::Base.connection.execute(<<-SQL)
       CREATE VIRTUAL TABLE vec_chunks USING vec0(
         chunk_id INTEGER PRIMARY KEY,
-        embedding FLOAT[512]
+        embedding FLOAT[1536]
       );
     SQL
   end

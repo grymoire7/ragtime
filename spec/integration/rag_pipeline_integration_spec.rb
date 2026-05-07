@@ -84,7 +84,7 @@ RSpec.describe "RAG Pipeline Integration", type: :integration do
       # Create predictable embeddings for testing
       # Use document ID and position to create consistent vectors
       seed = document.id * 1000 + index
-      embedding = Array.new(512) { |i| Math.sin(seed + i) }
+      embedding = Array.new(1536) { |i| Math.sin(seed + i) }
 
       chunks << create(:chunk,
         document: document,

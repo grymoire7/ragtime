@@ -12,9 +12,9 @@ RSpec.describe ProcessDocumentJob, type: :job do
   end
   let(:embeddings) do
     [
-      Array.new(512) { 0.1 },
-      Array.new(512) { 0.2 },
-      Array.new(512) { 0.3 }
+      Array.new(1536) { 0.1 },
+      Array.new(1536) { 0.2 },
+      Array.new(1536) { 0.3 }
     ]
   end
 
