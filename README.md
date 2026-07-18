@@ -13,13 +13,6 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 - **🔒 Session Authentication**: Professional login flow for access control
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
 
-## 🚀 Live demo
-
-**[Request access to live demo](https://ragtime-demo.fly.dev)** - Production-deployed and ready for review
-
-> **Note**: The demo is hosted by fly.io and requires password authentication
-> for security. If you would like access, please contact me or my referring recruiter.
-
 ## 🛠 Tech stack
 
 ### Backend
@@ -36,7 +29,7 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 ### DevOps & Deployment
 - **Docker** multi-stage containerization
 - **Nginx** reverse proxy in production
-- **Fly.io** deployment with persistent volumes
+- **Docker Compose** deployment with persistent volumes
 - **Over 220 passing tests** with comprehensive coverage
 
 ## 📸 Screenshots
@@ -60,7 +53,7 @@ A document Q&A system that demonstrates modern full-stack development skills wit
 
 ### Run with Docker
 
-The Docker setup was tested on both Apple M3 (local) and Linux x64 (Fly.io).
+The Docker setup was tested on both Apple M3 (ARM64) and Linux x64 platforms.
 
 **Prerequisites**
 - Docker installed locally
@@ -188,7 +181,7 @@ flowchart TD
 ## 📚 Portfolio highlights
 
 - **🐳 Production container**: Multi-stage Dockerfile with cross-platform builds (ARM64 → AMD64)
-- **🚀 Real deployment**: Fly.io deployment with persistent volumes and health checks
+- **🚀 Real deployment**: Docker container deployment with persistent volumes and health checks
 - **📈 Error handling**: Comprehensive error handling, input validation, and graceful degradation
 - **🔐 Security**: Session-based authentication, API key management, input sanitization
 - **📝 Documentation**: Complete API docs, architecture docs, and development guides

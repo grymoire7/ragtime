@@ -469,7 +469,7 @@ Focus on getting core functionality working end-to-end before polish:
   sqlite-vec limitations required careful test design. We unit test with rspec.
 
 **Critical Path**: Working demo that's deployable and interview-ready ✅
-**Deployed**: Live at https://ragtime-docs.fly.dev/ (Phase 8 complete)
+**Deployed**: Not currently deployed publicly; run locally via Docker (see README)
 **In Progress**: Production routing fixes and UI polish (Phase 9)
 **Next**: Fix page reload routing issues, continue documentation
 **Nice-to-Have**: Streaming, advanced features, extensive test coverage
