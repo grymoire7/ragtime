@@ -3,10 +3,10 @@
 [daemons.api]
 run = "exec bin/rails server"
 port = { expect = [3000], bump = false }
-ready_http = { url = "http://localhost:3000/", status = [301] }
+ready_http = { url = "http://localhost:3000/", status = [404] }
 
 [daemons.web]
 run = "exec npm run dev"
 dir = "frontend"
 port = { expect = [5173], bump = false }
-ready_http = { url = "http://localhost:5173/", status = [302] }
+ready_http = { url = "http://localhost:5173/", status = [200] }
