@@ -4,15 +4,15 @@ Rails.application.routes.draw do
   delete "auth/logout", to: "sessions#destroy"
   get "auth/status", to: "sessions#status"
 
-  resources :documents, only: [:index, :show, :create, :destroy]
+  resources :documents, only: [ :index, :show, :create, :destroy ]
 
   resources :chats do
     member do
       delete :clear
     end
-    resources :messages, only: [:create]
+    resources :messages, only: [ :create ]
   end
-  resources :models, only: [:index, :show] do
+  resources :models, only: [ :index, :show ] do
     collection do
       post :refresh
     end

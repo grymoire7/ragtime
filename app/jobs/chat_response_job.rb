@@ -8,7 +8,7 @@ class ChatResponseJob < ApplicationJob
 
     # Create the user message
     user_message = chat.messages.create!(
-      role: 'user',
+      role: "user",
       content: content
     )
 
@@ -18,7 +18,7 @@ class ChatResponseJob < ApplicationJob
     metadata[:empty_context] = result[:empty_context] if result[:empty_context].present?
 
     assistant_message = chat.messages.create!(
-      role: 'assistant',
+      role: "assistant",
       content: result[:answer],
       metadata: metadata
     )

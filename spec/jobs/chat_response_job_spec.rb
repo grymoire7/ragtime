@@ -11,7 +11,7 @@ RSpec.describe ChatResponseJob, type: :job do
     let(:rag_result) do
       {
         answer: 'The meaning of life is 42.',
-        citations: [{ document_id: 1, title: 'Hitchhiker\'s Guide', excerpt: 'Deep Thought said so.' }],
+        citations: [ { document_id: 1, title: 'Hitchhiker\'s Guide', excerpt: 'Deep Thought said so.' } ],
         empty_context: nil
       }
     end
@@ -99,7 +99,7 @@ RSpec.describe ChatResponseJob, type: :job do
         let(:rag_result) do
           {
             answer: 'The meaning of life is 42.',
-            citations: [{ document_id: 1 }],
+            citations: [ { document_id: 1 } ],
             empty_context: nil
           }
         end
@@ -118,7 +118,7 @@ RSpec.describe ChatResponseJob, type: :job do
         let(:rag_result) do
           {
             answer: 'The meaning of life is 42.',
-            citations: [{ document_id: 1 }],
+            citations: [ { document_id: 1 } ],
             empty_context: false
           }
         end

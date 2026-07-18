@@ -216,7 +216,7 @@ RSpec.describe Rag::PromptBuilder do
     end
 
     describe "similarity score range" do
-      [0.0, 0.1, 0.5, 1.0, 1.5, 2.0].each do |d|
+      [ 0.0, 0.1, 0.5, 1.0, 1.5, 2.0 ].each do |d|
         context "when distance is #{d}" do
           let(:distance) { d }
 
@@ -271,7 +271,7 @@ RSpec.describe Rag::PromptBuilder do
 
       context "when distance is 0.1, format_context should display relevance: 0.95" do
         let(:chunks_data) do
-          [{ chunk: chunk, document: document, content: chunk.content, distance: 0.1 }]
+          [ { chunk: chunk, document: document, content: chunk.content, distance: 0.1 } ]
         end
 
         it "produces the same relevance value as used in format_context" do
@@ -283,7 +283,7 @@ RSpec.describe Rag::PromptBuilder do
 
       context "when distance is 0.5, format_context should display relevance: 0.75" do
         let(:chunks_data) do
-          [{ chunk: chunk, document: document, content: chunk.content, distance: 0.5 }]
+          [ { chunk: chunk, document: document, content: chunk.content, distance: 0.5 } ]
         end
 
         it "produces the same relevance value as used in format_context" do

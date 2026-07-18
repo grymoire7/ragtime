@@ -58,7 +58,7 @@ module DocumentProcessing
 
           # Start new chunk with overlap from previous chunk
           overlap_text = get_overlap_text(current_chunk.join("\n\n"))
-          current_chunk = overlap_text.present? ? [overlap_text] : []
+          current_chunk = overlap_text.present? ? [ overlap_text ] : []
           current_tokens = overlap_text.present? ? count_tokens(overlap_text) : 0
         end
 
@@ -131,7 +131,7 @@ module DocumentProcessing
           chunks << build_chunk(current_chunk.join(" "))
 
           overlap_text = get_overlap_text(current_chunk.join(" "))
-          current_chunk = overlap_text.present? ? [overlap_text] : []
+          current_chunk = overlap_text.present? ? [ overlap_text ] : []
           current_tokens = overlap_text.present? ? count_tokens(overlap_text) : 0
         end
 

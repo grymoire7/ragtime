@@ -17,7 +17,7 @@ class ApplicationController < ActionController::Base
 
   def require_authentication
     unless authenticated?
-      render json: { error: 'Authentication required' }, status: :unauthorized
+      render json: { error: "Authentication required" }, status: :unauthorized
     end
   end
 end

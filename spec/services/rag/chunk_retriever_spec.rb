@@ -83,7 +83,7 @@ RSpec.describe Rag::ChunkRetriever do
     it "filters by document_ids when provided" do
       query = "test query"
 
-      results = described_class.retrieve(query, document_ids: [document1.id])
+      results = described_class.retrieve(query, document_ids: [ document1.id ])
 
       expect(results).not_to be_empty
       results.each do |result|
@@ -206,11 +206,11 @@ RSpec.describe Rag::ChunkRetriever do
 
         results = described_class.retrieve(
           query,
-          document_ids: [document1.id, document2.id]
+          document_ids: [ document1.id, document2.id ]
         )
 
         document_ids = results.map { |r| r[:document].id }.uniq
-        expect(document_ids).to match_array([document1.id, document2.id].select { |id|
+        expect(document_ids).to match_array([ document1.id, document2.id ].select { |id|
           results.any? { |r| r[:document].id == id }
         })
       end

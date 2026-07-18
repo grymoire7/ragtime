@@ -311,7 +311,7 @@ RSpec.describe "RAG Pipeline Integration", type: :integration do
       retriever = Rag::ChunkRetriever.new
 
       # Test different limits
-      [1, 3, 5].each do |limit|
+      [ 1, 3, 5 ].each do |limit|
         chunks_data = retriever.retrieve(query, limit: limit)
         expect(chunks_data.length).to be <= limit
       end

@@ -28,7 +28,7 @@ RSpec.configure do |config|
     end
 
     # Drop supporting tables
-    ["vec_chunks_info", "vec_chunks_chunks", "vec_chunks_rowids", "vec_chunks_vector_chunks00"].each do |table|
+    [ "vec_chunks_info", "vec_chunks_chunks", "vec_chunks_rowids", "vec_chunks_vector_chunks00" ].each do |table|
       begin
         ActiveRecord::Base.connection.execute("DROP TABLE IF EXISTS #{table}")
       rescue => e

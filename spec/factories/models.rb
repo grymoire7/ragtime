@@ -5,7 +5,7 @@ FactoryBot.define do
     provider { "ollama" }
     family { "test-family" }
     context_window { 8192 }
-    capabilities { ["chat"] }
+    capabilities { [ "chat" ] }
 
     trait :gemma3 do
       model_id { "gemma3:latest" }
@@ -19,7 +19,7 @@ FactoryBot.define do
       name { "Jina Embeddings v2 Small (Ollama)" }
       provider { "ollama" }
       family { "jina-bert-v2" }
-      capabilities { ["embedding"] }
+      capabilities { [ "embedding" ] }
     end
   end
 end

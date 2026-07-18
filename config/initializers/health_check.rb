@@ -7,20 +7,20 @@
 
 # Verify sqlite-vec extension loads correctly in production
 # Skip during asset precompilation to avoid dependency issues in Docker
-return if ENV['SKIP_SQLITE_VEC'] == 'true'
+return if ENV["SKIP_SQLITE_VEC"] == "true"
 
-unless ENV['SKIP_SQLITE_VEC'] == 'true'
+unless ENV["SKIP_SQLITE_VEC"] == "true"
   begin
     # Test sqlite-vec extension availability
-    require 'sqlite3'
+    require "sqlite3"
 
     # Create a temporary in-memory database to test the extension
-    db = SQLite3::Database.new(':memory:')
+    db = SQLite3::Database.new(":memory:")
 
     # Try to load the vec extension using absolute path
     db.enable_load_extension(true)
-    require 'sqlite_vec'
-    extension_path = SqliteVec.loadable_path + '.so'
+    require "sqlite_vec"
+    extension_path = SqliteVec.loadable_path + ".so"
     db.load_extension(extension_path)
     db.enable_load_extension(false)
 

@@ -25,7 +25,7 @@
 # be configured to provide at least as many connections as the number of
 # threads. This includes Active Record's `pool` parameter in `database.yml`.
 
-require 'fileutils'
+require "fileutils"
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
@@ -48,7 +48,7 @@ if ENV["RAILS_ENV"] == "production"
   rescue NameError
     2 # Fallback if Concurrent is not available
   end
-  workers ENV.fetch("WEB_CONCURRENCY") { [Integer(worker_count), 4].min }
+  workers ENV.fetch("WEB_CONCURRENCY") { [ Integer(worker_count), 4 ].min }
 
   # Set worker timeout and boot timeout for container environment
   worker_timeout 30
@@ -59,7 +59,7 @@ if ENV["RAILS_ENV"] == "production"
 
   # Configure worker lifecycle
   before_fork do
-    require 'puma_worker_killer'
+    require "puma_worker_killer"
     PumaWorkerKiller.config do |config|
       config.ram = 1024 # MB
       config.frequency = 5 # seconds
@@ -74,8 +74,8 @@ if ENV["RAILS_ENV"] == "production"
   # Reconfigure RubyLLM in each worker after fork
   before_worker_boot do
     RubyLLM.configure do |config|
-      config.anthropic_api_key = ENV['ANTHROPIC_API_KEY'] || Rails.application.credentials.dig(:anthropic_api_key)
-      config.openai_api_key = ENV['OPENAI_API_KEY'] || Rails.application.credentials.dig(:openai_api_key)
+      config.anthropic_api_key = ENV["ANTHROPIC_API_KEY"] || Rails.application.credentials.dig(:anthropic_api_key)
+      config.openai_api_key = ENV["OPENAI_API_KEY"] || Rails.application.credentials.dig(:openai_api_key)
     end
   end
 else

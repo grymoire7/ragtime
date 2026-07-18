@@ -70,7 +70,7 @@ module Rag
       # Convert cosine distance to a 0-1 similarity score
       # Distance of 0 = perfect match (similarity 1.0)
       # Distance of 2 = completely opposite (similarity 0.0)
-      similarity = [0, 1 - (distance / 2.0)].max
+      similarity = [ 0, 1 - (distance / 2.0) ].max
       format("%.2f", similarity)
     end
   end

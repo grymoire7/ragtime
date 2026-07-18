@@ -69,7 +69,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
       end
 
       context "with 1-dimensional embedding" do
-        let(:embedding) { [0.5] }
+        let(:embedding) { [ 0.5 ] }
 
         it "returns an array with exactly 1536 elements" do
           result = pad_embedding.call(embedding)
@@ -121,7 +121,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
       end
 
       context "with embeddings containing specific float values" do
-        let(:embedding) { [1.0, 2.5, -3.7, 0.0, 0.123456789] }
+        let(:embedding) { [ 1.0, 2.5, -3.7, 0.0, 0.123456789 ] }
 
         it "preserves the exact float values" do
           result = pad_embedding.call(embedding)
@@ -264,7 +264,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
     end
 
     context "when called with embeddings of various sizes around the boundary" do
-      [511, 512, 513, 1535, 1536, 1537].each do |size|
+      [ 511, 512, 513, 1535, 1536, 1537 ].each do |size|
         context "with #{size}-dimensional embedding" do
           let(:embedding) { Array.new(size) { rand } }
 
@@ -277,7 +277,7 @@ RSpec.describe DocumentProcessing::EmbeddingGenerator do
     end
 
     context "when embedding contains zero values mixed with non-zero values" do
-      let(:embedding) { [0.0, 1.0, 0.0, 2.0] }
+      let(:embedding) { [ 0.0, 1.0, 0.0, 2.0 ] }
 
       it "preserves existing zeros in original embedding" do
         result = pad_embedding.call(embedding)

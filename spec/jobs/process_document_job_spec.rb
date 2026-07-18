@@ -47,7 +47,7 @@ RSpec.describe ProcessDocumentJob, type: :job do
       described_class.new.perform(document.id)
 
       expect(DocumentProcessing::EmbeddingGenerator).to have_received(:generate_batch)
-        .with(["Chunk 1 text", "Chunk 2 text", "Chunk 3 text"])
+        .with([ "Chunk 1 text", "Chunk 2 text", "Chunk 3 text" ])
     end
 
     it "creates chunk records with correct data" do

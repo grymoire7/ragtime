@@ -1,6 +1,6 @@
 # Load sqlite-vec extension for vector similarity search
 # Skip during asset precompilation to avoid dependency issues in Docker
-return if ENV['SKIP_SQLITE_VEC'] == 'true'
+return if ENV["SKIP_SQLITE_VEC"] == "true"
 
 # Defer sqlite-vec loading until needed
 # This allows the application to start even if there are extension issues
@@ -20,7 +20,7 @@ ActiveSupport.on_load(:active_record) do
           # Try different extensions based on platform
           # macOS uses .dylib, Linux uses .so
           base_path = SqliteVec.loadable_path
-          extensions = ['.dylib', '.so', '']
+          extensions = [ ".dylib", ".so", "" ]
 
           loaded = false
           extensions.each do |ext|

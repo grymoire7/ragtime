@@ -15,8 +15,8 @@ RSpec.describe Document, type: :model do
         # Reload to get fresh association query
         document.reload
 
-        expect(document.chunks.to_a).to eq([chunk_0, chunk_1, chunk_2])
-        expect(document.chunks.map(&:position)).to eq([0, 1, 2])
+        expect(document.chunks.to_a).to eq([ chunk_0, chunk_1, chunk_2 ])
+        expect(document.chunks.map(&:position)).to eq([ 0, 1, 2 ])
       end
 
       it "maintains order when chunks are created out of sequence" do
@@ -29,7 +29,7 @@ RSpec.describe Document, type: :model do
 
         document.reload
 
-        expect(document.chunks.map(&:position)).to eq([0, 1, 2, 3, 4])
+        expect(document.chunks.map(&:position)).to eq([ 0, 1, 2, 3, 4 ])
       end
 
       it "returns chunks in position order even after new chunks are added" do
@@ -42,7 +42,7 @@ RSpec.describe Document, type: :model do
 
         document.reload
 
-        expect(document.chunks.to_a).to eq([chunk_0, chunk_1, chunk_2])
+        expect(document.chunks.to_a).to eq([ chunk_0, chunk_1, chunk_2 ])
       end
     end
   end

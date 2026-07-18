@@ -58,7 +58,7 @@ class Chunk < ApplicationRecord
 
     # Use raw connection.execute with bind parameters
     # Note: raw_connection.execute returns hash rows with string keys
-    results = connection.raw_connection.execute(sql, [binary_query, limit, distance_threshold])
+    results = connection.raw_connection.execute(sql, [ binary_query, limit, distance_threshold ])
 
     results.map do |row|
       # Manually construct chunk from row data (row is a hash with string keys)
@@ -75,7 +75,7 @@ class Chunk < ApplicationRecord
       chunk.instance_variable_set(:@previously_new_record, false)
 
       distance = row["distance"]
-      [chunk, distance]
+      [ chunk, distance ]
     end
   end
 
@@ -84,12 +84,12 @@ class Chunk < ApplicationRecord
   def insert_into_vec_table
     # Access the raw binary data from the attributes hash
     # This bypasses our custom getter that unpacks the array
-    binary_embedding = @attributes['embedding']&.value
+    binary_embedding = @attributes["embedding"]&.value
     return unless binary_embedding.present?
 
     # Use connection.execute with hex notation to pass binary data
     # SQLite requires binary data as BLOB, using X'...' hex notation
-    hex_data = binary_embedding.unpack1('H*')
+    hex_data = binary_embedding.unpack1("H*")
     self.class.connection.execute(
       "INSERT INTO vec_chunks (chunk_id, embedding) VALUES (#{id}, X'#{hex_data}')"
     )
@@ -97,13 +97,13 @@ class Chunk < ApplicationRecord
 
   def update_vec_table
     # Access the raw binary data from the attributes hash
-    binary_embedding = @attributes['embedding']&.value
+    binary_embedding = @attributes["embedding"]&.value
     return unless binary_embedding.present?
 
     # Use hex notation to pass binary data
     # Use INSERT OR REPLACE to handle both insert and update cases
     # This is needed because chunks might be created without embeddings initially
-    hex_data = binary_embedding.unpack1('H*')
+    hex_data = binary_embedding.unpack1("H*")
     self.class.connection.execute(
       "INSERT OR REPLACE INTO vec_chunks (chunk_id, embedding) VALUES (#{id}, X'#{hex_data}')"
     )

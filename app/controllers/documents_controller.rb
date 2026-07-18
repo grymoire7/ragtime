@@ -1,15 +1,15 @@
 class DocumentsController < ApplicationController
-  before_action :set_document, only: [:show, :destroy]
+  before_action :set_document, only: [ :show, :destroy ]
 
   # GET /documents
   # List all documents
   def index
     @documents = Document.order(created_at: :desc)
     render json: @documents.as_json(
-      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message],
-      methods: [:supported_format?],
+      only: [ :id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message ],
+      methods: [ :supported_format? ],
       include: {
-        chunks: { only: [:id] }
+        chunks: { only: [ :id ] }
       }
     ).map { |doc|
       doc.merge(chunk_count: doc["chunks"].length).except("chunks")
@@ -20,11 +20,11 @@ class DocumentsController < ApplicationController
   # Show a single document with its chunks
   def show
     render json: @document.as_json(
-      only: [:id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message],
-      methods: [:supported_format?],
+      only: [ :id, :title, :filename, :content_type, :file_size, :status, :processed_at, :created_at, :error_message ],
+      methods: [ :supported_format? ],
       include: {
         chunks: {
-          only: [:id, :position, :token_count, :content],
+          only: [ :id, :position, :token_count, :content ],
           methods: []
         }
       }
@@ -58,7 +58,7 @@ class DocumentsController < ApplicationController
       ProcessDocumentJob.perform_later(@document.id)
 
       render json: @document.as_json(
-        only: [:id, :title, :filename, :content_type, :file_size, :status, :created_at, :error_message]
+        only: [ :id, :title, :filename, :content_type, :file_size, :status, :created_at, :error_message ]
       ), status: :created
     else
       render json: { errors: @document.errors.full_messages }, status: :unprocessable_content

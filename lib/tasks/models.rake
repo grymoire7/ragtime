@@ -5,39 +5,39 @@ namespace :models do
 
     ollama_models = [
       {
-        model_id: 'gemma3:latest',
-        name: 'Gemma 3 (Ollama)',
+        model_id: "gemma3:latest",
+        name: "Gemma 3 (Ollama)",
         provider: :ollama,
-        family: 'gemma3',
+        family: "gemma3",
         context_window: 8192
       },
       {
-        model_id: 'jina/jina-embeddings-v2-small-en',
-        name: 'Jina Embeddings v2 Small (Ollama)',
+        model_id: "jina/jina-embeddings-v2-small-en",
+        name: "Jina Embeddings v2 Small (Ollama)",
         provider: :ollama,
-        family: 'jina-bert-v2',
+        family: "jina-bert-v2",
         context_window: 8192,
-        capabilities: ['embedding']
+        capabilities: [ "embedding" ]
       },
       {
-        model_id: 'mistral-small:latest',
-        name: 'Mistral Small (Ollama)',
+        model_id: "mistral-small:latest",
+        name: "Mistral Small (Ollama)",
         provider: :ollama,
-        family: 'mistral',
+        family: "mistral",
         context_window: 32768
       },
       {
-        model_id: 'llama3.2:3b',
-        name: 'Llama 3.2 3B (Ollama)',
+        model_id: "llama3.2:3b",
+        name: "Llama 3.2 3B (Ollama)",
         provider: :ollama,
-        family: 'llama',
+        family: "llama",
         context_window: 128000
       },
       {
-        model_id: 'llama3.2:1b',
-        name: 'Llama 3.2 1B (Ollama)',
+        model_id: "llama3.2:1b",
+        name: "Llama 3.2 1B (Ollama)",
         provider: :ollama,
-        family: 'llama',
+        family: "llama",
         context_window: 128000
       }
     ]
@@ -94,7 +94,7 @@ namespace :models do
       print "Are you sure you want to remove #{count} Ollama models? (y/N): "
       response = STDIN.gets.chomp.downcase
 
-      if response == 'y'
+      if response == "y"
         Model.where(provider: :ollama).destroy_all
         puts "Removed #{count} Ollama models."
       else

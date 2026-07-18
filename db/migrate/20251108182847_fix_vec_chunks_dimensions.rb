@@ -54,7 +54,7 @@ class FixVecChunksDimensions < ActiveRecord::Migration[8.0]
 
     # Try different extensions based on platform
     base_path = SqliteVec.loadable_path
-    extensions = ['.dylib', '.so', '']
+    extensions = [ '.dylib', '.so', '' ]
 
     loaded = false
     extensions.each do |ext|

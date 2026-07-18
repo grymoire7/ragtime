@@ -197,7 +197,7 @@ RSpec.describe Chunk, type: :model do
 
       chunks = document.chunks.order(:position)
 
-      expect(chunks.map(&:position)).to eq([0, 1, 2])
+      expect(chunks.map(&:position)).to eq([ 0, 1, 2 ])
       expect(chunks.first).to eq(chunk1)
     end
   end

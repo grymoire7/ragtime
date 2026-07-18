@@ -214,7 +214,7 @@ RSpec.describe "Documents", type: :request do
         # Force validation error by stubbing save to return false
         allow_any_instance_of(Document).to receive(:save).and_return(false)
         allow_any_instance_of(Document).to receive_message_chain(:errors, :full_messages)
-          .and_return(["Title can't be blank"])
+          .and_return([ "Title can't be blank" ])
 
         post documents_path, params: { file: file }
 

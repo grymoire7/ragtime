@@ -118,7 +118,7 @@ module Rag
       citation_numbers = answer.scan(/\[(\d+)\]/).flatten.map(&:to_i).uniq.sort
 
       # If no citations found in answer, return empty array and original answer
-      return [[], answer] if citation_numbers.empty?
+      return [ [], answer ] if citation_numbers.empty?
 
       # Filter citations to only include those actually referenced
       # Citation numbers are 1-indexed, array is 0-indexed
@@ -140,7 +140,7 @@ module Rag
         new_num ? "[#{new_num}]" : match
       end
 
-      [used_citations, renumbered_answer]
+      [ used_citations, renumbered_answer ]
     end
 
     def format_citations(chunks_data)
@@ -160,7 +160,7 @@ module Rag
       # Distance of 0 = perfect match (similarity 1.0)
       # Distance of 2 = completely opposite (similarity 0.0)
       return 1.0 if distance.nil? || distance == 0
-      similarity = [0, 1 - (distance / 2.0)].max
+      similarity = [ 0, 1 - (distance / 2.0) ].max
       similarity.round(2)
     end
 

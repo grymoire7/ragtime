@@ -1,21 +1,21 @@
 class SessionsController < ApplicationController
-  skip_before_action :require_authentication, only: [:create, :status, :destroy]
+  skip_before_action :require_authentication, only: [ :create, :status, :destroy ]
   skip_before_action :verify_authenticity_token
 
   # POST /auth/login
   def create
-    site_password = Rails.application.credentials.dig(:site_password) || ENV['SITE_PASSWORD']
+    site_password = Rails.application.credentials.dig(:site_password) || ENV["SITE_PASSWORD"]
 
     if site_password.blank?
-      render json: { error: 'Authentication not configured' }, status: :internal_server_error
+      render json: { error: "Authentication not configured" }, status: :internal_server_error
       return
     end
 
     if params[:password] == site_password
       session[:authenticated] = true
-      render json: { message: 'Login successful' }, status: :ok
+      render json: { message: "Login successful" }, status: :ok
     else
-      render json: { error: 'Invalid password' }, status: :unauthorized
+      render json: { error: "Invalid password" }, status: :unauthorized
     end
   end
 
@@ -23,7 +23,7 @@ class SessionsController < ApplicationController
   def destroy
     session[:authenticated] = false
     reset_session
-    render json: { message: 'Logged out successfully' }, status: :ok
+    render json: { message: "Logged out successfully" }, status: :ok
   end
 
   # GET /auth/status

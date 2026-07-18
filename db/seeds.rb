@@ -12,7 +12,7 @@ production_models = [
     provider: :openai,
     family: 'gpt-4',
     context_window: 128000,
-    capabilities: ['chat', 'function_calling']
+    capabilities: [ 'chat', 'function_calling' ]
   },
   {
     model_id: 'text-embedding-3-small',
@@ -20,7 +20,7 @@ production_models = [
     provider: :openai,
     family: 'text-embedding-3',
     context_window: 8191,
-    capabilities: ['embedding']
+    capabilities: [ 'embedding' ]
   }
 ]
 
@@ -32,7 +32,7 @@ development_models = [
     provider: :anthropic,
     family: 'claude-3-5',
     context_window: 200000,
-    capabilities: ['chat']
+    capabilities: [ 'chat' ]
   },
   {
     model_id: 'jina/jina-embeddings-v2-small-en',
@@ -40,7 +40,7 @@ development_models = [
     provider: :ollama,
     family: 'jina-bert-v2',
     context_window: 8192,
-    capabilities: ['embedding']
+    capabilities: [ 'embedding' ]
   }
 ]
 
@@ -52,7 +52,7 @@ test_models = [
     provider: :test,
     family: 'test',
     context_window: 4096,
-    capabilities: ['chat']
+    capabilities: [ 'chat' ]
   },
   {
     model_id: 'test-embedding-model',
@@ -60,7 +60,7 @@ test_models = [
     provider: :test,
     family: 'test',
     context_window: 8192,
-    capabilities: ['embedding']
+    capabilities: [ 'embedding' ]
   }
 ]
 

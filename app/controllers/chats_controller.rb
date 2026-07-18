@@ -1,5 +1,5 @@
 class ChatsController < ApplicationController
-  before_action :set_chat, only: [:show, :clear, :destroy]
+  before_action :set_chat, only: [ :show, :clear, :destroy ]
 
   def index
     @chats = Chat.order(created_at: :desc)
@@ -28,7 +28,7 @@ class ChatsController < ApplicationController
     end
 
     respond_to do |format|
-      format.html { redirect_to @chat, notice: 'Chat was successfully created.' }
+      format.html { redirect_to @chat, notice: "Chat was successfully created." }
       format.json { render json: @chat, status: :created }
     end
   end
@@ -63,8 +63,8 @@ class ChatsController < ApplicationController
     @chat.messages.destroy_all
 
     respond_to do |format|
-      format.html { redirect_to @chat, notice: 'Conversation cleared.' }
-      format.json { render json: { message: 'Conversation cleared' }, status: :ok }
+      format.html { redirect_to @chat, notice: "Conversation cleared." }
+      format.json { render json: { message: "Conversation cleared" }, status: :ok }
     end
   end
 
@@ -74,7 +74,7 @@ class ChatsController < ApplicationController
     @chat.destroy
 
     respond_to do |format|
-      format.html { redirect_to root_path, notice: 'Chat deleted.' }
+      format.html { redirect_to root_path, notice: "Chat deleted." }
       format.json { head :no_content }
     end
   end
