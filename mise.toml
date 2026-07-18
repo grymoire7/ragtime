@@ -1,0 +1,20 @@
+[tools]
+ruby = "3.4.5"
+
+[tasks.test]
+description = "Run the backend RSpec suite"
+run = "bundle exec rspec"
+
+[tasks.lint]
+description = "Rubocop (rubocop-rails-omakase)"
+run = "bin/rubocop"
+
+[tasks."frontend:build"]
+description = "Production build of the Vue frontend"
+run = "npm run build"
+dir = "frontend"
+
+[tasks."frontend:test"]
+description = "Run the frontend Vitest suite once (not watch mode)"
+run = "npx vitest run"
+dir = "frontend"
