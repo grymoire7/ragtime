@@ -1,65 +1,74 @@
 # 🎹 Ragtime: Document Q&A System
 
+*A full-stack RAG demo that answers questions from your own documents.*
+
 ![Tests](https://img.shields.io/badge/tests-222%20passing-brightgreen) ![Rails 8](https://img.shields.io/badge/rails-8.0.3-red) ![Vue.js](https://img.shields.io/badge/vue.js-3.x-green) ![License](https://img.shields.io/badge/license-MIT-blue)
 
-A document Q&A system that demonstrates modern full-stack development skills with Rails 8, Vue.js, and AI-powered search.
+## Overview
 
-## ✨ Features
+Ragtime is a document Q&A system built to show off modern full-stack development with Rails 8, Vue.js, and AI-powered search. Upload a document, ask a question about it, and get an answer with citations back to the exact passage it came from.
 
-- **📄 Document Upload**: Drag-and-drop PDF, TXT, DOCX, and MD files
-- **🤖 AI-Powered Q&A**: Ask questions and get cited answers from your documents
-- **🔗 Interactive Citations**: Click citations to view source passages in context
-- **📊 Document Management**: Organize and search uploaded documents
-- **🔒 Session Authentication**: Professional login flow for access control
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
+Core features:
 
-## 🛠 Tech stack
+- **Document upload**: drag-and-drop PDF, TXT, DOCX, and MD files
+- **AI-powered Q&A**: ask questions and get cited answers pulled straight from your documents
+- **Interactive citations**: click a citation to see the source passage in context
+- **Document management**: organize and search your uploaded documents
+- **Session authentication**: a simple login flow gates access
+- **Responsive design**: works on both desktop and mobile
 
-### Backend
-- **Rails 8** API with modern Ruby features
-- **SQLite + sqlite-vec** for vector similarity search
-- **Solid Queue** for background job processing (in-process via Puma)
-- **OpenAI** integration for embeddings (text-embedding-3-small) and chat (gpt-4o-mini)
+### Screenshots
 
-### Frontend
-- **Vue.js 3** with Composition API
-- **Vite** for fast development and building
-- **Vue Router 4** for client-side navigation
-
-### DevOps & Deployment
-- **Docker** multi-stage containerization
-- **Nginx** reverse proxy in production
-- **Docker Compose** deployment with persistent volumes
-- **Over 220 passing tests** with comprehensive coverage
-
-## 📸 Screenshots
-
-### Main Interface
 ![Main Interface](docs/images/appview.png)<br>
-*Ragtime's main interface - upload documents, ask questions, get cited answers*
+*Ragtime's main interface: upload documents, ask questions, get cited answers*
 
 ![Document Chat Interface](docs/images/document_chat.png)<br>
-*Ragtime's document chat interface - ask questions, get cited answers*
+*Ragtime's document chat interface*
 
-### Interactive Citations
 ![Citation Demo](docs/images/citations.png)<br>
 *Click citations to view source passages in document context*
 
-### Password Authentication
 ![Mobile View](docs/images/password_access.png)<br>
 *Password authentication for secure access to the demo*
 
-## ⚡ Quick Start
+Under the hood, uploaded documents get extracted, split into overlapping chunks (800 tokens, 200 token overlap), embedded with OpenAI's text-embedding-3-small, and stored in SQLite via the sqlite-vec extension. When you ask a question, Ragtime retrieves the closest chunks by cosine distance, builds a grounded prompt, and asks gpt-4o-mini to answer with citations back to the source.
+
+A few deliberate trade-offs shaped the stack: SQLite with sqlite-vec instead of Postgres with pgvector keeps deployment to a single file and is plenty for demo scale; a Vue single-page app instead of Hotwire makes for a better chat interface; and Solid Queue runs in-process via the Puma plugin instead of a separate Sidekiq worker, which keeps deployment simple. See the design doc linked below for the full rundown.
+
+The backend and frontend are covered by more than 220 RSpec and Vitest specs, including integration tests for the full retrieval-to-answer pipeline.
+
+This is a solo portfolio project, so it isn't open to outside contributions, but feel free to browse the code. Some of it, including parts of this documentation, was written with AI assistance (Claude Code, using both Sonnet and GLM models) and then reviewed and refined by hand. It wasn't vibe coded: the goal is to demonstrate real engineering judgment, and the blog post below covers the challenges and lessons from that process.
+
+## Stack
+
+**Backend**
+- Rails 8 API with modern Ruby features
+- SQLite + sqlite-vec for vector similarity search
+- Solid Queue for background job processing (in-process via Puma)
+- OpenAI for embeddings (text-embedding-3-small) and chat (gpt-4o-mini)
+
+**Frontend**
+- Vue.js 3 with the Composition API
+- Vite for development and builds
+- Vue Router 4 for client-side navigation
+
+**Deployment**
+- Docker multi-stage containerization
+- Nginx reverse proxy in production
+- Docker Compose with persistent volumes
+
+## Setup
 
 ### Run with Docker
 
-The Docker setup was tested on both Apple M3 (ARM64) and Linux x64 platforms.
+The Docker setup has been tested on both Apple M3 (ARM64) and Linux x64.
 
 **Prerequisites**
 - Docker installed locally
 - Production credentials configured (see below)
 
 **Setup credentials**
+
 The application requires Rails credentials to be configured before running:
 
 ```bash
@@ -82,20 +91,35 @@ openai_api_key: sk-proj-your-openai-api-key-here
 ```
 
 **Run the container**
+
 ```bash
 ./script/rebuild-and-run
 ```
 
-Visit http://localhost:8080 to access the application. The password will be the `site_password` you configured above.
+Visit http://localhost:8080 to access the application. The password is the `site_password` you configured above.
 
-### Manual development setup
+**Convenience scripts**
+
+```bash
+./script/build-local      # Build cross-platform Docker container
+./script/run-local        # Run container with proper Rails credentials
+./script/rebuild-and-run  # Build and run in one command
+./script/logs             # View container logs
+./script/db-status        # Check database and vector table status
+```
+
+**Container access**
+- Rails API: http://localhost:8080
+- Vue.js frontend: http://localhost:8080/frontend/
+- Database: SQLite with persistent volume storage
+
+### Manual setup
 
 **Prerequisites**
-- Ruby 3.3+
+- Ruby 3.4.5 (managed via mise, see `mise.toml`)
 - Node.js 18+
-- Docker (for container development)
+- Docker (only needed for container development)
 
-**Setup instructions**
 ```bash
 # Clone and setup
 git clone https://github.com/grymoire7/ragtime.git
@@ -109,130 +133,32 @@ bundle exec rake vec_chunks:init
 # Frontend setup
 cd frontend
 npm install
-npm run build
-
-# Start servers
-cd ..
-bin/rails server            # Backend (http://localhost:3000)
-cd frontend && npm run dev  # Frontend (http://localhost:5173)
 ```
 
-**Running tests**
+Once dependencies are installed, use `pitchfork start` to run the API and frontend dev servers together. See Tasks below.
+
+## Tasks
+
+`pitchfork.toml` defines two daemons: `api` runs the Rails server on port 3000, and `web` runs the Vue dev server (in `frontend/`) on port 5173. Running `pitchfork start` boots both at once.
+
+Day-to-day commands come from `mise.toml`:
+
 ```bash
-# Backend tests
-bundle exec rspec
-
-# Frontend tests
-cd frontend && npm run test
+mise run test             # Run the backend RSpec suite
+mise run lint             # Rubocop (rubocop-rails-omakase)
+mise run frontend:build   # Production build of the Vue frontend
+mise run frontend:test    # Run the frontend Vitest suite once (not watch mode)
 ```
 
-## 🏗 Architecture
+Tasks that operate inside `frontend/` are prefixed with `frontend:` so it's clear at a glance which app they touch. The backend tasks stay bare since this is primarily a Rails project.
 
-### System overview
+## Documentation
 
-```mermaid
-flowchart TD
-    A[Vue.js Frontend] <--> B[Rails 8 API]
-    B <--> C[SQLite + sqlite-vec]
-    B --> D[Solid Queue Jobs]
-    D --> E[OpenAI APIs]
+- **[Design doc](docs/initial-design.md)**: the original project plan and architecture rationale
+- **[Blog post](https://tracyatteberry.com/posts/ragtime)**: a deep dive into architecture and technical decisions
+- **[Portfolio](https://tracyatteberry.com/portfolio)**: other projects and experience
+- **[About](https://tracyatteberry.com/about)**: background and contact information
 
-    style A fill:#41B883,stroke:#333,stroke-width:2px
-    style B fill:#CC0000,stroke:#333,stroke-width:2px
-    style C fill:#003B57,stroke:#333,stroke-width:2px
-    style D fill:#6F42C1,stroke:#333,stroke-width:2px
-    style E fill:#412991,stroke:#333,stroke-width:2px
-```
+## License
 
-### Key components
-
-**Backend services**
-- `ChunkRetriever`: Vector similarity search with L2 distance
-- `PromptBuilder`: RAG prompt construction with document context
-- `AnswerGenerator`: LLM integration with structured citation extraction
-- `TextChunker`: Intelligent document chunking (800 tokens, 200 overlap)
-- `EmbeddingGenerator`: Batch processing for vector embeddings
-
-**Document processing pipeline**
-1. **Upload**: Documents stored via Active Storage
-2. **Extract**: Text extraction from PDF, TXT, DOCX, MD formats
-3. **Chunk**: Intelligent segmentation with overlap for context
-4. **Embed**: Vector generation using OpenAI text-embedding-3-small
-5. **Store**: Chunks and embeddings in SQLite with vector search
-
-### Technical decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| SQLite + sqlite-vec **vs** PostgreSQL + pgvector | Simplified deployment, single file, appropriate for demo scale |
-| Rails 8 API **vs** monolith | Clean separation, modern frontend stack, API-first design |
-| Vue.js SPA **vs** Hotwire | Better UX for chat interface, modern JavaScript skills |
-| Solid Queue in-process **vs** Sidekiq | Deployment simplicity, Rails 8 integration |
-| Single container **vs** microservices | Faster deployment, appropriate for project scope |
-
-## 🧪 Testing
-
-- **Over 220 passing specs** with comprehensive test coverage
-- **Unit tests** for all models and services
-- **Integration tests** for complete RAG pipeline
-- **API endpoint testing** for all controller actions
-- **Frontend component tests** for Vue.js components
-
-## 📚 Portfolio highlights
-
-- **🐳 Production container**: Multi-stage Dockerfile with cross-platform builds (ARM64 → AMD64)
-- **🚀 Real deployment**: Docker container deployment with persistent volumes and health checks
-- **📈 Error handling**: Comprehensive error handling, input validation, and graceful degradation
-- **🔐 Security**: Session-based authentication, API key management, input sanitization
-- **📝 Documentation**: Complete API docs, architecture docs, and development guides
-- **🔧 Developer tools**: Convenient scripts for local development, debugging, and deployment
-
-## 🔧 Development tools
-
-**Convenient scripts**
-```bash
-./script/build-local      # Build cross-platform Docker container
-./script/run-local        # Run container with proper Rails credentials
-./script/rebuild-and-run  # Build and run in one command
-./script/logs             # View container logs
-./script/db-status        # Check database and vector table status
-```
-
-**Container access**
-- Rails API: http://localhost:8080
-- Vue.js Frontend: http://localhost:8080/frontend/
-- Database: SQLite with persistent volume storage
-
-## 📖 Documentation
-
-- **[Blog post](https://tracyatteberry.com/posts/ragtime)** - Deep dive into architecture and technical decisions
-- **[Portfolio](https://tracyatteberry.com/portfolio)** - Other projects and experience
-- **[About](https://tracyatteberry.com/about)** - Background and contact information
-
-## 🤝 Contributing
-
-This is a portfolio project demonstrating professional development practices. While contributions aren't being accepted, the codebase serves as an example of:
-
-- Clean, maintainable Rails 8 code
-- Modern Vue.js frontend architecture
-- Comprehensive testing strategies
-- Production deployment practices
-- Professional documentation standards
-
-## 🤖 AI acknowledgment
-
-Some portions of this project were assisted by AI tools for code generation and
-documentation. All code and content have been reviewed and refined to ensure
-quality and accuracy. This project was not "vibe coded" by AI; it reflects
-professional development skills and practices. Claude Code was used with both
-Sonnet and GLM models. See [blog post](https://tracyatteberry.com/blog/ragtime)
-for more details about my challenges and learnings while using AI with this
-project.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-**Built with ❤️ using Rails 8, Vue.js, and modern development practices**
+MIT License, see [LICENSE](LICENSE) file for details.
