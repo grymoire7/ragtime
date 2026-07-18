@@ -1,0 +1,52 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "a305e5c13a0460fb5d1502ae785e74f88ea80c4b97f103ffc70d377faf3bf88b",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/models/chunk.rb",
+      "line": 94,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "self.class.connection.execute(\"INSERT INTO vec_chunks (chunk_id, embedding) VALUES (#{id}, X'#{binary_embedding.unpack1(\"H*\")}')\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Chunk",
+        "method": "insert_into_vec_table"
+      },
+      "user_input": "id",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "Not exploitable: id is the record's own primary key (integer, never user-supplied), and the embedding value is hex-encoded via unpack1(\"H*\") so it can only contain [0-9a-f] characters. Raw SQL is required here because sqlite-vec's vec0 virtual table doesn't support standard parameterized ActiveRecord inserts for BLOB columns."
+    },
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "b8d59c69184b3b1de13c9fa37be6c55aa9970061b8d9bec10957da2716b3c9ac",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/models/chunk.rb",
+      "line": 108,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "self.class.connection.execute(\"INSERT OR REPLACE INTO vec_chunks (chunk_id, embedding) VALUES (#{id}, X'#{binary_embedding.unpack1(\"H*\")}')\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Chunk",
+        "method": "update_vec_table"
+      },
+      "user_input": "id",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "Not exploitable: id is the record's own primary key (integer, never user-supplied), and the embedding value is hex-encoded via unpack1(\"H*\") so it can only contain [0-9a-f] characters. Raw SQL is required here because sqlite-vec's vec0 virtual table doesn't support standard parameterized ActiveRecord inserts for BLOB columns."
+    }
+  ],
+  "updated": "2026-07-17 23:09:11 -0500",
+  "brakeman_version": "8.0.5"
+}
