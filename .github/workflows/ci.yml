@@ -19,10 +19,6 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Set bundler version
-        env:
-          BUNDLER_VERSION: '4.0.13'
-
       - name: Scan for common Rails security vulnerabilities using static analysis
         run: bin/brakeman --no-pager
 
@@ -39,10 +35,6 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Set bundler version
-        env:
-          BUNDLER_VERSION: '4.0.13'
-
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/importmap audit
 
@@ -57,10 +49,6 @@ jobs:
         with:
           ruby-version: .ruby-version
           bundler-cache: true
-
-      - name: Set bundler version
-        env:
-          BUNDLER_VERSION: '4.0.13'
 
       - name: Lint code for consistent style
         run: bin/rubocop -f github
@@ -86,10 +74,6 @@ jobs:
         with:
           ruby-version: .ruby-version
           bundler-cache: true
-
-      - name: Set bundler version
-        env:
-          BUNDLER_VERSION: '4.0.13'
 
       - name: Prepare test database
         env:
