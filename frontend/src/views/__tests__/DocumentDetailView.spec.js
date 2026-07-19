@@ -209,9 +209,9 @@ describe('DocumentDetailView', () => {
       const wrapper = mount(DocumentDetailView);
       await flushPromises();
 
-      const errorMessage = wrapper.find('.error-message');
-      expect(errorMessage.exists()).toBe(true);
-      expect(errorMessage.text()).toContain('Failed to load document');
+      const errorBanner = wrapper.find('.error-banner');
+      expect(errorBanner.exists()).toBe(true);
+      expect(errorBanner.text()).toContain('Failed to load document');
     });
   });
 
